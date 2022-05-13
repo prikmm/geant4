@@ -144,6 +144,18 @@ class Par04InferenceSetup
   void GetPositions(std::vector<G4ThreeVector>& aDepositsPositions, G4ThreeVector aParticlePosition,
                     G4ThreeVector aParticleDirection);
 
+  /// Setting execution providers flags
+  /// CPU
+  inline void SetDnnlEPFlag(G4bool aIfDnnlEP) { fDnnlEpFlag = aIfDnnlEP; };
+  inline G4int GetDnnlEPFlag() const { return fDnnlEpFlag; };
+  inline void SetOpevinoEPFlag(G4bool aIfOpenVinoEP) { fOpenVinoEpFlag = aIfOpenVinoEP; };
+  inline G4int GetOpevinoEPFlag() const { return fOpenVinoEpFlag; };
+  /// GPU
+  inline void SetCudaEPFlag(G4bool aIfCudaEP) { fCudaEpFlag = aIfCudaEP; };
+  inline G4int GetCudaEPFlag() const { return fCudaEpFlag; };
+  inline void SetTensorrtEPFlag(G4bool aIfTensorrtEP) { fTensorrtEpFlag = aIfTensorrtEP; };
+  inline G4int GetTensorrtEPFlag() const { return fTensorrtEpFlag; };
+
  private:
   /// Pointer to detector construction to retrieve (once) the detector
   /// dimensions
@@ -183,6 +195,15 @@ class Par04InferenceSetup
   G4bool fOptimizationFlag = false;
   /// Intra-operation number of threads
   G4int fIntraOpNumThreads = 1;
+
+  /// Flags for execution providers
+  /// CPU
+  G4bool fDnnlEpFlag = false;
+  G4bool fOpenVinoEpFlag = false;
+  /// GPU
+  G4bool fCudaEpFlag = false;
+  G4bool fTensorrtEpFlag = false;
+
 };
 
 #endif /* PAR04INFEERENCESETUP_HH */

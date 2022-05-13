@@ -23,6 +23,18 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
+
+// Notes for me while I am updating the file to include Dnnl, OpenVino, Cuda and Tensorrt EPs
+// OpenVino - Disable all ORT Graph Optimizations, OpenVino does its own and it is observed that
+//            giving all control to OpenVino performs the best.
+// https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html#onnxruntime-graph-optimization-level
+//
+// Dnnl - None so far 
+//
+// Cuda - None so far
+//
+// Tensorrt - None so far
+
 #ifdef USE_INFERENCE_ONNX
 #include "Par04InferenceInterface.hh"
 #include "G4RotationMatrix.hh"
@@ -32,27 +44,59 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4int optimizeFlag,
-                                       G4int intraOpNumThreads)
+                                       G4int intraOpNumThreads, G4bool fDnnlEpFlag, G4bool fOpenVinoEpFlag,
+                                       G4bool fCudaEpFlag, G4bool fTensorrtEpFlag)
   : Par04InferenceInterface()
 {
   // initialization of the enviroment and inference session
   auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "ENV");
   fEnv          = std::move(envLocal);
-  fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
   // graph optimizations of the model
   // if the flag is not set to true none of the optimizations will be applied
   // if it is set to true all the optimizations will be applied
-  if(optimizeFlag)
+  if(fDnnlEpFlag)
   {
-    fSessionOptions.SetOptimizedModelFilePath("opt-graph");
-    fSessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
-    // ORT_ENABLE_BASIC #### ORT_ENABLE_EXTENDED
+    fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
+    if(optimizeFlag)
+    {
+      fSessionOptions.SetOptimizedModelFilePath("opt-graph");
+      fSessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
+      // ORT_ENABLE_BASIC #### ORT_ENABLE_EXTENDED
+    }
+    else
+      fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
+    // save json file for model execution profiling
+    bool enable_cpu_mem_arena = true;
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, enable_cpu_mem_arena));
   }
-  else
+  else if(fOpenVinoEpFlag)
+  {
+    OrtOpenVINOProviderOptions ov_options;
+    ov_options.device_type = "CPU_FP32";
+    ov_options.enable_vpu_fast_compile = 0;
+    ov_options.device_id = "";
+    ov_options.num_of_threads = intraOpNumThreads;
+    ov_options.use_compiled_network = false;
+    ov_options.blob_dump_path = "";
+    ov_options.context = 0x123456ff;
+    ov_options.enable_opencl_throttling = false;
+    Ort::ThrowOnError(SessionOptionsAppendExecutionProvider_OpenVINO(fSessionOptions, &options));
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
-  // save json file for model execution profiling
+
+  }
+  else if(fCudaEpFlag)
+  {
+
+  }
+  else if(fTensorrtEpFlag)
+  {
+    int device_id = 0;
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Tensorrt(fSessionOptions, device_id));
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(fSessionOptions, device_id));
+  }
   if(profileFlag)
     fSessionOptions.EnableProfiling("opt.json");
+
 
   auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
   fSession          = std::move(sessionLocal);
@@ -123,6 +167,7 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
   aEnergies.assign(aSize, 0);
   for(int i = 0; i < aSize; ++i)
     aEnergies[i] = floatarr[i];
+  
 }
 
 #endif

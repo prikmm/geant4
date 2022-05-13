@@ -46,7 +46,8 @@
 class Par04OnnxInference : public Par04InferenceInterface
 {
  public:
-  Par04OnnxInference(G4String, G4int, G4int, G4int);
+  Par04OnnxInference(G4String, G4int, G4int, G4int,
+                     G4bool, G4bool, G4bool, G4bool);   // For Execution Provider Runtime
   Par04OnnxInference();
 
   /// Run inference

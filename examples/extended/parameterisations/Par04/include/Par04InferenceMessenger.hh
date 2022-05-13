@@ -34,6 +34,7 @@ class G4UIcmdWithoutParameter;
 class G4UIcmdWithAnInteger;
 class G4UIcmdWithADoubleAndUnit;
 class G4UIcmdWithAString;
+class G4UIcmdWithABool;
 
 /**
  * @brief Inference messenger.
@@ -86,6 +87,14 @@ class Par04InferenceMessenger : public G4UImessenger
   G4UIcmdWithADoubleAndUnit* fMeshSizeRhoCellsCmd = nullptr;
   /// Command to the size of cells in the cylindrical readout mesh (along z axis)
   G4UIcmdWithADoubleAndUnit* fMeshSizeZCellsCmd = nullptr;
+
+  /// Commands to set execution provider flags
+  /// CPU
+  G4UIcmdWithABool* fDnnlFlagCmd = nullptr
+  G4UIcmdWithABool* fOpenVinoFlagCmd = nullptr
+  /// GPU
+  G4UIcmdWithABool* fCudaFlagCmd = nullptr
+  G4UIcmdWithABool* fTensorrtFlagCmd = nullptr
 };
 
 #endif

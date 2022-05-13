@@ -31,6 +31,7 @@
 #include "G4UIcmdWithAnInteger.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4UIcmdWithAString.hh"
+#include "G4UIcmdWithABool.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -121,6 +122,31 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   fMeshSizeZCellsCmd->SetUnitCategory("Length");
   fMeshSizeZCellsCmd->AvailableForStates(G4State_Idle);
   fMeshSizeZCellsCmd->SetToBeBroadcasted(true);
+
+  /// Onnx Runtime Execution Provider flag commands
+  fDnnlFlagCmd = new G4UIcmdWithABool("/Par04/inference/setDnnlFlag", this);
+  fDnnlFlagCmd->SetGuidance("Whether to use DNNL Execution Provider for Onnx Runtime or not");
+  fDnnlFlagCmd->SetParameterName("DnnlFlag", false);
+  fDnnlFlagCmd->AvailableForStates(G4State_Idle);
+  fDnnlFlagCmd->SetToBeBroadcasted(true);
+
+  fOpenVinoFlagCmd = new G4UIcmdWithABool("/Par04/inference/setOpenVinoFlag", this);
+  fOpenVinoFlagCmd->SetGuidance("Whether to use OpenVino Execution Provider for Onnx Runtime or not");
+  fOpenVinoFlagCmd->SetParameterName("OpenVinoFlag", false);
+  fOpenVinoFlagCmd->AvailableForStates(G4State_Idle);
+  fOpenVinoFlagCmd->SetToBeBroadcasted(true);
+
+  fCudaFlagCmd = new G4UIcmdWithABool("/Par04/inference/setCudaFlag", this);
+  fCudaFlagCmd->SetGuidance("Whether to use CUDA Execution Provider for Onnx Runtime or not");
+  fCudaFlagCmd->SetParameterName("CudaFlag", false);
+  fCudaFlagCmd->AvailableForStates(G4State_Idle);
+  fCudaFlagCmd->SetToBeBroadcasted(true);
+
+  fTensorrtFlagCmd = new G4UIcmdWithABool("/Par04/inference/setTensorrtFlag", this);
+  fTensorrtFlagCmd->SetGuidance("Whether to use TensorRT Execution Provider for Onnx Runtime or not");
+  fTensorrtFlagCmd->SetParameterName("TensorrtFlag", false);
+  fTensorrtFlagCmd->AvailableForStates(G4State_Idle);
+  fTensorrtFlagCmd->SetToBeBroadcasted(true);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -138,6 +164,12 @@ Par04InferenceMessenger::~Par04InferenceMessenger()
   delete fMeshNbZCellsCmd;
   delete fMeshSizeRhoCellsCmd;
   delete fMeshSizeZCellsCmd;
+
+  // Execution provider flags
+  delete fDnnlFlagCmd;
+  delete fOpenVinoFlagCmd;
+  delete fCudaFlagCmd;
+  delete fTensorrtFlagCmd;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -190,6 +222,24 @@ void Par04InferenceMessenger::SetNewValue(G4UIcommand* aCommand, G4String aNewVa
   {
     fInference->SetMeshSizeOfCells(2, fMeshSizeZCellsCmd->GetNewDoubleValue(aNewValue));
   }
+
+  /// Onnx Runtime Execution Provider Flags
+  if (aCommand == fDnnlFlagCmd)
+  {
+    fInference->SetDnnlEPFlag(fDnnlFlagCmd->GetNewBoolValue(aNewValue));
+  } 
+  if (aCommand == fOpenVinoFlagCmd)
+  {
+    fInference->SetOpevinoEPFlag(fOpenVinoFlagCmd->GetNewBoolValue(aNewValue));
+  }
+  if (aCommand == fCudaFlagCmd)
+  {
+    fInference->SetCudaEPFlag(fCudaFlagCmd->GetNewBoolValue(aNewValue));
+  }
+  if (aCommand == fTensorrtFlagCmd)
+  {
+    fInference->SetTensorrtEPFlag(fTensorrtFlagCmd->GetNewBoolValue(aNewValue));
+  } 
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -241,6 +291,24 @@ G4String Par04InferenceMessenger::GetCurrentValue(G4UIcommand* aCommand)
   else if(aCommand == fMeshSizeZCellsCmd)
   {
     cv = fMeshSizeZCellsCmd->ConvertToString(fInference->GetMeshSizeOfCells()[2]);
+  }
+
+  /// Onnx Runtime Execution Provider Flags
+  if (aCommand == fDnnlFlagCmd)
+  {
+    fInference->SetDnnlEPFlag(fDnnlFlagCmd->GetNewBoolValue(aNewValue));
+  } 
+  if (aCommand == fOpenVinoFlagCmd)
+  {
+    fInference->SetOpevinoEPFlag(fOpenVinoFlagCmd->GetNewBoolValue(aNewValue));
+  }
+  if (aCommand == fCudaFlagCmd)
+  {
+    fInference->SetCudaEPFlag(fCudaFlagCmd->GetNewBoolValue(aNewValue));
+  }
+  if (aCommand == fTensorrtFlagCmd)
+  {
+    fInference->SetTensorrtEPFlag(fTensorrtFlagCmd->GetNewBoolValue(aNewValue));
   }
 
   return cv;

@@ -64,7 +64,8 @@ void Par04InferenceSetup::SetInferenceLibrary(G4String aName)
 #ifdef USE_INFERENCE_ONNX
   if(fInferenceLibrary == "ONNX")
     fInferenceInterface = std::unique_ptr<Par04InferenceInterface>(
-      new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads));
+      new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads,
+                             fDnnlEpFlag, fOpenVinoEpFlag, fCudaEpFlag, fTensorrtEpFlag));
 #endif
 #ifdef USE_INFERENCE_LWTNN
   if(fInferenceLibrary == "LWTNN")
