@@ -296,19 +296,19 @@ G4String Par04InferenceMessenger::GetCurrentValue(G4UIcommand* aCommand)
   /// Onnx Runtime Execution Provider Flags
   if (aCommand == fDnnlFlagCmd)
   {
-    fInference->SetDnnlEPFlag(fDnnlFlagCmd->GetNewBoolValue(aNewValue));
+    cv = fDnnlFlagCmd->ConvertToString(fInference->GetDnnlEPFlag(aNewValue));
   } 
-  if (aCommand == fOpenVinoFlagCmd)
+  else if (aCommand == fOpenVinoFlagCmd)
   {
-    fInference->SetOpevinoEPFlag(fOpenVinoFlagCmd->GetNewBoolValue(aNewValue));
+    cv = fOpenVinoFlagCmd->ConvertToString(fInference->GetOpevinoEPFlag(aNewValue));
   }
-  if (aCommand == fCudaFlagCmd)
+  else if (aCommand == fCudaFlagCmd)
   {
-    fInference->SetCudaEPFlag(fCudaFlagCmd->GetNewBoolValue(aNewValue));
+    cv = fCudaFlagCmd->ConvertToString(fInference->GetCudaEPFlag(aNewValue));
   }
-  if (aCommand == fTensorrtFlagCmd)
+  else if (aCommand == fTensorrtFlagCmd)
   {
-    fInference->SetTensorrtEPFlag(fTensorrtFlagCmd->GetNewBoolValue(aNewValue));
+    cv = fTensorrtFlagCmd->ConvertToString(fInference->GetTensorrtEPFlag(aNewValue));
   }
 
   return cv;

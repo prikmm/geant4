@@ -33,6 +33,7 @@
 #include "G4ThreeVector.hh"
 #include "globals.hh"
 #include "core/session/onnxruntime_cxx_api.h"
+#include "core/session/onnxruntime_c_api.h"
 
 /**
  * @brief Inference using the ONNX runtime.
@@ -54,7 +55,8 @@ class Par04OnnxInference : public Par04InferenceInterface
   /// @param[in] aGenVector Input latent space and conditions
   /// @param[out] aEnergies Model output = generated shower energies
   /// @param[in] aSize Size of the output
-  void RunInference(vector<float> aGenVector, std::vector<G4double>& aEnergies, int aSize);
+  void RunInference(vector<float> aGenVector, std::vector<G4double>& aEnergies,
+                    int aSize, G4bool fCudaEpFlag);
 
  private:
   /// Pointer to the ONNX enviroment
@@ -70,6 +72,8 @@ class Par04OnnxInference : public Par04InferenceInterface
   /// when defining  the model's architecture (if applicable)
   /// they can also be retrieved from model.summary()
   std::vector<const char*> fInames;
+  
+  OrtCUDAProviderOptionsV2* fCudaOptions = nullptr;
 };
 
 #endif /* PAR04ONNXINFERENCE_HH */

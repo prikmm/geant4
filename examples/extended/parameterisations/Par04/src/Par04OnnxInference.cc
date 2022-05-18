@@ -39,6 +39,7 @@
 #include "Par04InferenceInterface.hh"
 #include "G4RotationMatrix.hh"
 #include "Par04OnnxInference.hh"
+#include <vector>
 #include <cassert>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -80,20 +81,49 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     ov_options.blob_dump_path = "";
     ov_options.context = 0x123456ff;
     ov_options.enable_opencl_throttling = false;
-    Ort::ThrowOnError(SessionOptionsAppendExecutionProvider_OpenVINO(fSessionOptions, &options));
+    Ort::ThrowOnError(fSessionOptions.AppendExecutionProvider_OpenVINO(&ov_options));
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
-
-  }
-  else if(fCudaEpFlag)
-  {
-
   }
   else if(fTensorrtEpFlag)
   {
-    int device_id = 0;
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Tensorrt(fSessionOptions, device_id));
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(fSessionOptions, device_id));
+    OrtTensorRTProviderOptions trt_options;
+    trt_options.device_id = 1;
+    trt_options.trt_max_workspace_size = 2147483648;
+    trt_options.trt_max_partition_iterations = 10;
+    trt_options.trt_min_subgraph_size = 5;
+    trt_options.trt_fp16_enable = 1;
+    trt_options.trt_int8_enable = 1;
+    trt_options.trt_int8_use_native_calibration_table = 1;
+    trt_options.trt_engine_cache_enable = 1;
+    trt_options.trt_engine_cache_path = "/path/to/cache"
+    trt_options.trt_dump_subgraphs = 1;
+    Ort::ThrowOnError(fSessionOptions.AppendExecutionProvider_TensorRT(&trt_options));
   }
+  else if(fCudaEpFlag || fTensorrtEpFlag)
+  {
+    CreateCUDAProviderOptions(&fCudaOptions);
+    std::vector<const char*> keys{
+      "device_id",
+      "gpu_mem_limit", 
+      "arena_extend_strategy", 
+      "cudnn_conv_algo_search", 
+      "do_copy_in_default_stream", 
+      "cudnn_conv_use_max_workspace", 
+      "cudnn_conv1d_pad_to_nc1d"
+    };
+    std::vector<const char*> values{
+      "0",                  // device_id
+      "2147483648",         // gpu_mem_limit
+      "kSameAsRequested",   // arena_extend_strategy
+      "DEFAULT",            // cudnn_conv_algo_search
+      "1",                  // do_copy_in_default_stream
+      "1",                  // cudnn_conv_use_max_workspace
+      "1"                   // cudnn_conv1d_pad_to_nc1d
+    };
+    UpdateCUDAProviderOptions(cuda_options, keys.data(), values.data(), keys.size());
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA_V2(fSessionOptions, fCudaOptions));
+  }
+  
   if(profileFlag)
     fSessionOptions.EnableProfiling("opt.json");
 
@@ -106,7 +136,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4double>& aEnergies,
-                                      int aSize)
+                                      int aSize, G4bool fCudaEpFlag)
 {
   // input nodes
   Ort::AllocatorWithDefaultOptions allocator;
@@ -168,6 +198,8 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
   for(int i = 0; i < aSize; ++i)
     aEnergies[i] = floatarr[i];
   
+  if (fCudaEpFlag) { ReleaseCUDAProviderOptions(fCudaOptions); }
+ 
 }
 
 #endif
