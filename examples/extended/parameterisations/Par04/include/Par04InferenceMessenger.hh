@@ -90,11 +90,11 @@ class Par04InferenceMessenger : public G4UImessenger
 
   /// Commands to set execution provider flags
   /// CPU
-  G4UIcmdWithABool* fDnnlFlagCmd = nullptr
-  G4UIcmdWithABool* fOpenVinoFlagCmd = nullptr
+  G4UIcmdWithABool* fDnnlFlagCmd = nullptr;
+  G4UIcmdWithABool* fOpenVinoFlagCmd = nullptr;
   /// GPU
-  G4UIcmdWithABool* fCudaFlagCmd = nullptr
-  G4UIcmdWithABool* fTensorrtFlagCmd = nullptr
+  G4UIcmdWithABool* fCudaFlagCmd = nullptr;
+  G4UIcmdWithABool* fTensorrtFlagCmd = nullptr;
 };
 
 #endif
