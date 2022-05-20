@@ -13,7 +13,13 @@ find_path(
   OnnxRuntime_INCLUDE_DIR
   NAMES core/session/onnxruntime_cxx_api.h
   PATH_SUFFIXES include include/onnxruntime
-  DOC "The ONNXRuntime include directory")
+  DOC "The ONNXRuntime C++ include directory")
+
+find_path(
+  OnnxRuntime_INCLUDE_DIR
+  NAMES core/session/onnxruntime_c_api.h
+  PATH_SUFFIXES include include/onnxruntime
+  DOC "The ONNXRuntime C include directory")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(

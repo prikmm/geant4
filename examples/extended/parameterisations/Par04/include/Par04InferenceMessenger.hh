@@ -77,6 +77,15 @@ class Par04InferenceMessenger : public G4UImessenger
   G4UIcmdWithAnInteger* fProfileFlagCmd = nullptr;
   /// Command to set the fOptimizationFlagCmd
   G4UIcmdWithAnInteger* fOptimizationFlagCmd = nullptr;
+
+  /// Commands to set execution provider flags
+  /// CPU
+  G4UIcmdWithAnInteger* fDnnlFlagCmd = nullptr;
+  G4UIcmdWithAnInteger* fOpenVinoFlagCmd = nullptr;
+  /// GPU
+  G4UIcmdWithAnInteger* fCudaFlagCmd = nullptr;
+  G4UIcmdWithAnInteger* fTensorrtFlagCmd = nullptr;
+
   /// Command to set the number of cells in the cylindrical readout mesh (along rho axis)
   G4UIcmdWithAnInteger* fMeshNbRhoCellsCmd = nullptr;
   /// Command to set the number of cells in the cylindrical readout mesh (along phi axis)
@@ -87,14 +96,6 @@ class Par04InferenceMessenger : public G4UImessenger
   G4UIcmdWithADoubleAndUnit* fMeshSizeRhoCellsCmd = nullptr;
   /// Command to the size of cells in the cylindrical readout mesh (along z axis)
   G4UIcmdWithADoubleAndUnit* fMeshSizeZCellsCmd = nullptr;
-
-  /// Commands to set execution provider flags
-  /// CPU
-  G4UIcmdWithABool* fDnnlFlagCmd = nullptr;
-  G4UIcmdWithABool* fOpenVinoFlagCmd = nullptr;
-  /// GPU
-  G4UIcmdWithABool* fCudaFlagCmd = nullptr;
-  G4UIcmdWithABool* fTensorrtFlagCmd = nullptr;
 };
 
 #endif

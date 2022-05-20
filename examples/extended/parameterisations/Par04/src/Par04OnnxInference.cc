@@ -45,98 +45,141 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4int optimizeFlag,
-                                       G4int intraOpNumThreads, G4bool fDnnlEpFlag, G4bool fOpenVinoEpFlag,
-                                       G4bool fCudaEpFlag, G4bool fTensorrtEpFlag)
+                                       G4int intraOpNumThreads, G4int dnnlFlag, G4int openvinoFlag,
+                                       G4int cudaFlag, G4int tensorrtFlag)
   : Par04InferenceInterface()
 {
   // initialization of the enviroment and inference session
   auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "ENV");
   fEnv          = std::move(envLocal);
+
+  // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
+  const auto& ortApi = Ort::GetApi();
+
+  // Alternative way
+  //auto ortApibase = OrtGetApiBase();
+  //auto ortApi = ortApibase->GetApi(ORT_API_VERSION);
+
+  G4cout << profileFlag << "," << optimizeFlag << G4endl;
+  G4cout << dnnlFlag << "," << openvinoFlag << "," << cudaFlag << "," << tensorrtFlag << G4endl; 
+  
   // graph optimizations of the model
   // if the flag is not set to true none of the optimizations will be applied
   // if it is set to true all the optimizations will be applied
-  if(fDnnlEpFlag)
-  {
-    fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
-    if(optimizeFlag)
+  if(optimizeFlag && (dnnlFlag || cudaFlag))
     {
       fSessionOptions.SetOptimizedModelFilePath("opt-graph");
       fSessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
       // ORT_ENABLE_BASIC #### ORT_ENABLE_EXTENDED
     }
-    else
-      fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
+  else
+    fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
+
+  if(dnnlFlag)
+  {
+    fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
+    std::vector<std::string> availableProviders = Ort::GetAvailableProviders();
+    for(std::string ep : availableProviders ){
+      G4cout << ep << G4endl;
+    }
     // save json file for model execution profiling
     bool enable_cpu_mem_arena = true;
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, enable_cpu_mem_arena));
+
+    // Currently, DNNL EP is not shown in the docs
+    //Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, enable_cpu_mem_arena));
   }
-  else if(fOpenVinoEpFlag)
+  if(openvinoFlag)
   {
-    OrtOpenVINOProviderOptions ov_options;
+    OrtOpenVINOProviderOptions ov_options{};
     ov_options.device_type = "CPU_FP32";
     ov_options.enable_vpu_fast_compile = 0;
     ov_options.device_id = "";
     ov_options.num_of_threads = intraOpNumThreads;
     ov_options.use_compiled_network = false;
     ov_options.blob_dump_path = "";
-    ov_options.context = 0x123456ff;
-    ov_options.enable_opencl_throttling = false;
-    Ort::ThrowOnError(fSessionOptions.AppendExecutionProvider_OpenVINO(&ov_options));
-    fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
+    //ov_options.context = "0x123456ff";  // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
+    //ov_options.enable_opencl_throttling = false;
+
+    fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);
+    //fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
+    G4cout << "Added OpenVINO Execution Provider" << G4endl;
+
   }
-  else if(fTensorrtEpFlag)
+  if(tensorrtFlag)
   {
-    OrtTensorRTProviderOptions trt_options;
-    trt_options.device_id = 1;
-    trt_options.trt_max_workspace_size = 2147483648;
-    trt_options.trt_max_partition_iterations = 10;
-    trt_options.trt_min_subgraph_size = 5;
-    trt_options.trt_fp16_enable = 1;
-    trt_options.trt_int8_enable = 1;
-    trt_options.trt_int8_use_native_calibration_table = 1;
-    trt_options.trt_engine_cache_enable = 1;
-    trt_options.trt_engine_cache_path = "/path/to/cache"
-    trt_options.trt_dump_subgraphs = 1;
-    Ort::ThrowOnError(fSessionOptions.AppendExecutionProvider_TensorRT(&trt_options));
+    OrtTensorRTProviderOptionsV2* fTrtOptions = nullptr;
+    Ort::ThrowOnError(ortApi.CreateTensorRTProviderOptions(&fTrtOptions));
+    std::vector<const char*> trt_keys{
+      "device_id",
+      "trt_max_workspace_size",
+      "trt_max_partition_iterations",
+      "trt_min_subgraph_size",
+      "trt_fp16_enable",
+      "trt_int8_enable",
+      "trt_int8_use_native_calibration_table",
+      "trt_engine_cache_enable",
+      "trt_engine_cache_path",
+      "trt_dump_subgraphs",
+    };
+    std::vector<const char*> trt_values{
+      "0",                          // device_id
+      "2147483648",                 // trt_max_workspace_size
+      "10",                         // trt_max_partition_iterations
+      "5",                          // trt_min_subgraph_size
+      "0",                          // trt_fp16_enable
+      "1",                          // trt_int8_enable
+      "1",                          // trt_int8_use_native_calibration_table 
+      "1",                          // trt_engine_cache_enable
+      "/opt/trt/geant4/cache",      // trt_engine_cache_path
+      "1"                           // trt_dump_subgraphs   
+    };
+    Ort::ThrowOnError(ortApi.UpdateTensorRTProviderOptions(fTrtOptions, trt_keys.data(), trt_values.data(), trt_keys.size()));
+    Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_TensorRT_V2(fSessionOptions, fTrtOptions));
+    G4cout << "Added TensorRT Execution Provider" << G4endl;
   }
-  else if(fCudaEpFlag || fTensorrtEpFlag)
+  if(cudaFlag)
   {
-    CreateCUDAProviderOptions(&fCudaOptions);
-    std::vector<const char*> keys{
+    OrtCUDAProviderOptionsV2* fCudaOptions = nullptr;
+    Ort::ThrowOnError(ortApi.CreateCUDAProviderOptions(&fCudaOptions));
+    std::vector<const char*> cuda_keys{
       "device_id",
       "gpu_mem_limit", 
       "arena_extend_strategy", 
       "cudnn_conv_algo_search", 
       "do_copy_in_default_stream", 
       "cudnn_conv_use_max_workspace", 
-      "cudnn_conv1d_pad_to_nc1d"
+      //"cudnn_conv1d_pad_to_nc1d"
     };
-    std::vector<const char*> values{
+    std::vector<const char*> cuda_values{
       "0",                  // device_id
       "2147483648",         // gpu_mem_limit
       "kSameAsRequested",   // arena_extend_strategy
       "DEFAULT",            // cudnn_conv_algo_search
       "1",                  // do_copy_in_default_stream
       "1",                  // cudnn_conv_use_max_workspace
-      "1"                   // cudnn_conv1d_pad_to_nc1d
+      //"1"                   // cudnn_conv1d_pad_to_nc1d
     };
-    UpdateCUDAProviderOptions(cuda_options, keys.data(), values.data(), keys.size());
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA_V2(fSessionOptions, fCudaOptions));
+    Ort::ThrowOnError(ortApi.UpdateCUDAProviderOptions(fCudaOptions, cuda_keys.data(), cuda_values.data(), cuda_keys.size()));
+    Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_CUDA_V2(fSessionOptions, fCudaOptions));
+    G4cout << "Added CUDA Execution Provider" << G4endl;
   }
-  
+
   if(profileFlag)
     fSessionOptions.EnableProfiling("opt.json");
 
 
   auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
   fSession          = std::move(sessionLocal);
+  G4cout << "Inference Session created" << G4endl;
   fInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemTypeDefault);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4double>& aEnergies,
-                                      int aSize, G4bool fCudaEpFlag)
+                                      int aSize)
+                                      //G4bool fCudaEpFlag
+                                      //)
 {
   // input nodes
   Ort::AllocatorWithDefaultOptions allocator;
@@ -198,8 +241,9 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
   for(int i = 0; i < aSize; ++i)
     aEnergies[i] = floatarr[i];
   
-  if (fCudaEpFlag) { ReleaseCUDAProviderOptions(fCudaOptions); }
- 
+  //if (fCudaEpFlag) {
+  //ReleaseCUDAProviderOptions(fCudaOptions); //}
+  G4cout << "Inference Complete" << G4endl;
 }
 
 #endif

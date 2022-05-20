@@ -48,7 +48,7 @@ class Par04OnnxInference : public Par04InferenceInterface
 {
  public:
   Par04OnnxInference(G4String, G4int, G4int, G4int,
-                     G4bool, G4bool, G4bool, G4bool);   // For Execution Provider Runtime
+                     G4int, G4int, G4int, G4int);   // For Execution Provider Runtime
   Par04OnnxInference();
 
   /// Run inference
@@ -56,7 +56,9 @@ class Par04OnnxInference : public Par04InferenceInterface
   /// @param[out] aEnergies Model output = generated shower energies
   /// @param[in] aSize Size of the output
   void RunInference(vector<float> aGenVector, std::vector<G4double>& aEnergies,
-                    int aSize, G4bool fCudaEpFlag);
+                    int aSize);
+                    //G4bool fCudaEpFlag
+                    //);
 
  private:
   /// Pointer to the ONNX enviroment
@@ -72,8 +74,7 @@ class Par04OnnxInference : public Par04InferenceInterface
   /// when defining  the model's architecture (if applicable)
   /// they can also be retrieved from model.summary()
   std::vector<const char*> fInames;
-  
-  OrtCUDAProviderOptionsV2* fCudaOptions = nullptr;
+
 };
 
 #endif /* PAR04ONNXINFERENCE_HH */

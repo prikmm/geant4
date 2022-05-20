@@ -1,0 +1,423 @@
+ARG TRT_CONTAINER_VERSION=21.12
+FROM nvcr.io/nvidia/tensorrt:${TRT_CONTAINER_VERSION}-py3 as base
+
+# Copyright (C) 2019-2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+# FROM ubuntu:20.04 AS base
+
+# hadolint ignore=DL3002
+USER root
+WORKDIR /
+
+SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl tzdata ca-certificates wget && \
+    rm -rf /var/lib/apt/lists/*
+
+
+# get product from URL
+ARG package_url=https://storage.openvinotoolkit.org/repositories/openvino/packages/2022.1/l_openvino_toolkit_dev_ubuntu20_p_2022.1.0.643.tgz
+ARG TEMP_DIR=/tmp/openvino_installer
+
+WORKDIR ${TEMP_DIR}
+# hadolint ignore=DL3020
+RUN wget ${package_url}
+#ADD ${package_url} ${TEMP_DIR}
+
+# install product by copying archive content
+ARG TEMP_DIR=/tmp/openvino_installer
+ENV INTEL_OPENVINO_DIR /opt/intel/openvino
+
+RUN tar -xzf "${TEMP_DIR}"/*.tgz && \
+    OV_BUILD="$(find . -maxdepth 1 -type d -name "*openvino*" | grep -oP '(?<=_)\d+.\d+.\d.\d+')" && \
+    OV_YEAR="$(find . -maxdepth 1 -type d -name "*openvino*" | grep -oP '(?<=_)\d+')" && \
+    OV_FOLDER="$(find . -maxdepth 1 -type d -name "*openvino*")" && \
+    mkdir -p /opt/intel/openvino_"$OV_BUILD"/ && \
+    cp -rf "$OV_FOLDER"/*  /opt/intel/openvino_"$OV_BUILD"/ && \
+    rm -rf "${TEMP_DIR:?}"/"$OV_FOLDER" && \
+    ln --symbolic /opt/intel/openvino_"$OV_BUILD"/ /opt/intel/openvino && \
+    ln --symbolic /opt/intel/openvino_"$OV_BUILD"/ /opt/intel/openvino_"$OV_YEAR" && \
+    rm -rf ${INTEL_OPENVINO_DIR}/tools/workbench && rm -rf ${TEMP_DIR}
+
+
+ENV HDDL_INSTALL_DIR=/opt/intel/openvino/runtime/3rdparty/hddl
+ENV InferenceEngine_DIR=/opt/intel/openvino/runtime/cmake
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/intel/openvino/extras/opencv/lib:/opt/intel/openvino/runtime/lib/intel64:/opt/intel/openvino/tools/compile_tool:/opt/intel/openvino/runtime/3rdparty/tbb/lib:/opt/intel/openvino/runtime/3rdparty/hddl/lib
+ENV OpenCV_DIR=/opt/intel/openvino/extras/opencv/cmake
+
+# ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+ENV PYTHONPATH=/opt/intel/openvino/python/python3.8:/opt/intel/openvino/python/python3:/opt/intel/openvino/extras/opencv/python
+ENV TBB_DIR=/opt/intel/openvino/runtime/3rdparty/tbb/cmake
+ENV ngraph_DIR=/opt/intel/openvino/runtime/cmake
+ENV OpenVINO_DIR=/opt/intel/openvino/runtime/cmake
+
+# for VPU
+ARG BUILD_DEPENDENCIES="autoconf \
+                        automake \
+                        build-essential \
+                        libtool \
+                        unzip"
+
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ${BUILD_DEPENDENCIES} && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN curl -L https://github.com/libusb/libusb/archive/v1.0.22.zip --output v1.0.22.zip && \
+    unzip v1.0.22.zip && rm -rf v1.0.22.zip
+
+WORKDIR /opt/libusb-1.0.22
+RUN ./bootstrap.sh && \
+    ./configure --disable-udev --enable-shared && \
+    make -j4
+
+RUN rm -rf ${INTEL_OPENVINO_DIR}/.distribution && mkdir ${INTEL_OPENVINO_DIR}/.distribution && \
+    touch ${INTEL_OPENVINO_DIR}/.distribution/docker
+    
+### ------------------------------------------------------------INSTALLING OPENVINO ALONGSIDE CUDA AND TENSORRT----------------------------------------------###
+
+ARG TRT_CONTAINER_VERSION=21.12
+FROM nvcr.io/nvidia/tensorrt:${TRT_CONTAINER_VERSION}-py3 as ep_base
+
+LABEL description="This is the dev image for Intel(R) Distribution of OpenVINO(TM) toolkit on Ubuntu 20.04 LTS"
+LABEL vendor="Intel Corporation"
+
+USER root
+WORKDIR /
+
+SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Creating user openvino and adding it to groups "video" and "users" to use GPU and VPU
+RUN sed -ri -e 's@^UMASK[[:space:]]+[[:digit:]]+@UMASK 000@g' /etc/login.defs && \
+	grep -E "^UMASK" /etc/login.defs && \
+	useradd -ms /bin/bash -G video,users -d /workspace/openvino openvino && \
+	chown openvino -R /workspace/openvino
+
+RUN mkdir /opt/intel
+
+ENV INTEL_OPENVINO_DIR /opt/intel/openvino
+
+COPY --from=base /opt/intel /opt/intel
+
+WORKDIR /thirdparty
+
+ARG INSTALL_SOURCES="no"
+
+ARG DEPS="tzdata \
+          curl"
+
+ARG LGPL_DEPS="g++ \
+               gcc \
+               libc6-dev"
+ARG INSTALL_PACKAGES="-c=opencv_req -c=python -c=cl_compiler"
+
+
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    dpkg --get-selections | grep -v deinstall | awk '{print $1}' > base_packages.txt  && \
+    apt-get install -y --no-install-recommends ${DEPS} && \
+    rm -rf /var/lib/apt/lists/*
+
+# hadolint ignore=DL3008, SC2012
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ${LGPL_DEPS} && \
+    ${INTEL_OPENVINO_DIR}/install_dependencies/install_openvino_dependencies.sh -y ${INSTALL_PACKAGES} && \
+    if [ "$INSTALL_SOURCES" = "yes" ]; then \
+      sed -Ei 's/# deb-src /deb-src /' /etc/apt/sources.list && \
+      apt-get update && \
+	  dpkg --get-selections | grep -v deinstall | awk '{print $1}' > all_packages.txt && \
+	  grep -v -f base_packages.txt all_packages.txt | while read line; do \
+	  package=$(echo $line); \
+	  name=(${package//:/ }); \
+      grep -l GPL /usr/share/doc/${name[0]}/copyright; \
+      exit_status=$?; \
+	  if [ $exit_status -eq 0 ]; then \
+	    apt-get source -q --download-only $package;  \
+	  fi \
+      done && \
+      echo "Download source for $(ls | wc -l) third-party packages: $(du -sh)"; fi && \
+    rm /usr/lib/python3.*/lib-dynload/readline.cpython-3*-gnu.so && rm -rf /var/lib/apt/lists/*
+
+WORKDIR ${INTEL_OPENVINO_DIR}/licensing
+RUN if [ "$INSTALL_SOURCES" = "no" ]; then \
+        echo "This image doesn't contain source for 3d party components under LGPL/GPL licenses. Please use tag <YYYY.U_src> to pull the image with downloaded sources." > DockerImage_readme.txt ; \
+    fi
+
+
+ENV HDDL_INSTALL_DIR=/opt/intel/openvino/runtime/3rdparty/hddl
+ENV InferenceEngine_DIR=/opt/intel/openvino/runtime/cmake
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/intel/openvino/extras/opencv/lib:/opt/intel/openvino/runtime/lib/intel64:/opt/intel/openvino/tools/compile_tool:/opt/intel/openvino/runtime/3rdparty/tbb/lib:/opt/intel/openvino/runtime/3rdparty/hddl/lib
+ENV OpenCV_DIR=/opt/intel/openvino/extras/opencv/cmake
+
+#ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+ENV PYTHONPATH=/opt/intel/openvino/python/python3.8:/opt/intel/openvino/python/python3:/opt/intel/openvino/extras/opencv/python
+ENV TBB_DIR=/opt/intel/openvino/runtime/3rdparty/tbb/cmake
+ENV ngraph_DIR=/opt/intel/openvino/runtime/cmake
+ENV OpenVINO_DIR=/opt/intel/openvino/runtime/cmake
+
+# setup Python
+ENV PYTHON_VER python3.8
+
+RUN ${PYTHON_VER} -m pip install --upgrade pip
+
+# dev package
+WORKDIR ${INTEL_OPENVINO_DIR}
+ARG OPENVINO_WHEELS_VERSION=2022.1.0
+ARG OPENVINO_WHEELS_URL
+# hadolint ignore=SC2102
+RUN ${PYTHON_VER} -m pip install --no-cache-dir cmake && \
+    if [ -z "$OPENVINO_WHEELS_URL" ]; then \
+        ${PYTHON_VER} -m pip install --no-cache-dir openvino=="$OPENVINO_WHEELS_VERSION" && \
+        ${PYTHON_VER} -m pip install --no-cache-dir openvino_dev[caffe,kaldi,mxnet,onnx,pytorch,tensorflow2]=="$OPENVINO_WHEELS_VERSION" ; \
+    else \
+        ${PYTHON_VER} -m pip install --no-cache-dir --pre openvino=="$OPENVINO_WHEELS_VERSION" --trusted-host=* --find-links "$OPENVINO_WHEELS_URL" && \
+        ${PYTHON_VER} -m pip install --no-cache-dir --pre openvino_dev[caffe,kaldi,mxnet,onnx,pytorch,tensorflow2]=="$OPENVINO_WHEELS_VERSION" --trusted-host=* --find-links "$OPENVINO_WHEELS_URL" ; \
+    fi
+
+WORKDIR ${INTEL_OPENVINO_DIR}/licensing
+# Please use `third-party-programs-docker-dev.txt` short path to 3d party file if you use the Dockerfile directly from docker_ci/dockerfiles repo folder
+COPY ./third-party-programs-docker-dev.txt ${INTEL_OPENVINO_DIR}/licensing
+COPY ./third-party-programs-docker-runtime.txt ${INTEL_OPENVINO_DIR}/licensing
+
+# for CPU
+
+# for GPU
+ARG TEMP_DIR=/tmp/opencl
+
+RUN echo "INSTALLING OPENCL"
+
+#WORKDIR ${INTEL_OPENVINO_DIR}/install_dependencies
+#RUN ./install_NEO_OCL_driver.sh --no_numa -y && \
+#    rm -rf /var/lib/apt/lists/*
+
+#RUN apt-get update && \
+#	apt-get install -y ocl-icd-opencl-dev
+
+RUN apt-get update && \ 
+	mkdir -p ${TEMP_DIR} && \
+	wget https://github.com/intel/compute-runtime/releases/download/22.16.22992/libigdgmm12_22.1.2_amd64.deb && \
+	wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.10988/intel-igc-core_1.0.10988_amd64.deb && \
+	wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.10988/intel-igc-opencl_1.0.10988_amd64.deb && \
+	wget https://github.com/intel/compute-runtime/releases/download/22.16.22992/intel-opencl-icd-dbgsym_22.16.22992_amd64.ddeb && \
+	wget https://github.com/intel/compute-runtime/releases/download/22.16.22992/intel-opencl-icd_22.16.22992_amd64.deb && \
+	wget https://github.com/intel/compute-runtime/releases/download/22.16.22992/intel-level-zero-gpu-dbgsym_1.3.22992_amd64.ddeb && \
+	wget https://github.com/intel/compute-runtime/releases/download/22.16.22992/intel-level-zero-gpu_1.3.22992_amd64.deb && \
+	wget https://github.com/intel/compute-runtime/releases/download/22.16.22992/ww16.sum && \
+	sha256sum -c ww16.sum && \
+	apt-get install -y ./*.deb && \
+	rm -rf /var/lib/apt/lists/*
+
+# for VPU
+ARG LGPL_DEPS=udev
+
+WORKDIR /thirdparty
+
+# hadolint ignore=DL3008, SC2012
+RUN apt-get update && \
+    dpkg --get-selections | grep -v deinstall | awk '{print $1}' > no_vpu_packages.txt && \
+    apt-get install -y --no-install-recommends ${LGPL_DEPS} && \
+    if [ "$INSTALL_SOURCES" = "yes" ]; then \
+      sed -Ei 's/# deb-src /deb-src /' /etc/apt/sources.list && \
+      apt-get update && \
+	  dpkg --get-selections | grep -v deinstall | awk '{print $1}' > vpu_packages.txt && \
+	  grep -v -f no_vpu_packages.txt vpu_packages.txt | while read line; do \
+	  package=$(echo $line); \
+	  name=(${package//:/ }); \
+      grep -l GPL /usr/share/doc/${name[0]}/copyright; \
+      exit_status=$?; \
+	  if [ $exit_status -eq 0 ]; then \
+	    apt-get source -q --download-only $package;  \
+	  fi \
+      done && \
+      echo "Download source for $(ls | wc -l) third-party packages: $(du -sh)"; fi && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=base /opt/libusb-1.0.22 /opt/libusb-1.0.22
+
+WORKDIR /opt/libusb-1.0.22/libusb
+RUN /bin/mkdir -p '/usr/local/lib' && \
+    /bin/bash ../libtool   --mode=install /usr/bin/install -c   libusb-1.0.la '/usr/local/lib' && \
+    /bin/mkdir -p '/usr/local/include/libusb-1.0' && \
+    /usr/bin/install -c -m 644 libusb.h '/usr/local/include/libusb-1.0' && \
+    /bin/mkdir -p '/usr/local/lib/pkgconfig'
+
+WORKDIR /opt/libusb-1.0.22/
+RUN /usr/bin/install -c -m 644 libusb-1.0.pc '/usr/local/lib/pkgconfig' && \
+    cp ${INTEL_OPENVINO_DIR}/runtime/3rdparty/97-myriad-usbboot.rules /etc/udev/rules.d/ && \
+    ldconfig
+
+# for HDDL
+WORKDIR /tmp
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libboost-filesystem-dev \
+        libboost-program-options-dev \
+        libboost-thread-dev \
+        libjson-c4 \
+        libxxf86vm-dev && \
+    rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
+
+
+# Post-installation cleanup and setting up OpenVINO environment variables
+ENV LIBVA_DRIVER_NAME=iHD
+ENV GST_VAAPI_ALL_DRIVERS=1
+ENV LIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
+
+RUN apt-get update && \
+    apt-get autoremove -y gfortran && \
+    rm -rf /var/lib/apt/lists/*
+
+
+
+### ----------------------------------------------------------INSTALLING ONNXRUNTIME----------------------------------------------------###
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /workspace
+
+ARG ORT_VERSION=1.11.0
+ARG ORT_REPO=https://github.com/microsoft/onnxruntime.git
+ARG OPENVINO_DEVICE=CPU_FP32 
+
+RUN apt-get update -y && \
+    TZ=Etc/UTC apt-get -y install tzdata && \
+    apt-get -y install build-essential libtool autoconf unzip wget curl gcc g++ libexpat1-dev software-properties-common git python3-dev python3-numpy python3-setuptools python3-wheel python3-pip aria2
+
+RUN aria2c -q -d /tmp -o cmake-3.21.0-linux-x86_64.tar.gz https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0-linux-x86_64.tar.gz && \
+        tar -zxf /tmp/cmake-3.21.0-linux-x86_64.tar.gz --strip=1 -C /usr/local
+
+RUN mkdir -p /opt/onnxruntime/src && \
+    mkdir -p /opt/onnxruntime/build && \
+    mkdir -p /opt/onnxruntime/install
+
+RUN cd /opt/onnxruntime/src && \
+	git clone --recursive -b rel-${ORT_VERSION} ${ORT_REPO} /opt/onnxruntime/src/ && \
+	/bin/sh dockerfiles/scripts/install_common_deps.sh
+
+RUN cd /opt/onnxruntime/src && \
+    ./build.sh --config Release --update --build --parallel --build_wheel --build_shared_lib --build_dir /opt/onnxruntime/build \
+    	--cmake_extra_defines CMAKE_INSTALL_PREFIX=/opt/onnxruntime/install ONNXRUNTIME_VERSION=$(cat ./VERSION_NUMBER) 'CMAKE_CUDA_ARCHITECTURES=37;50;52;60;61;70;75;80;86' \
+    	--use_dnnl \
+    	--use_openvino ${OPENVINO_DEVICE}\
+    	--use_cuda --cuda_home /usr/local/cuda --cudnn_home /usr/lib/x86_64-linux-gnu/ \
+    	--use_tensorrt --tensorrt_home /usr/lib/x86_64-linux-gnu/
+    	
+RUN cd /opt/onnxruntime/build/Release && \
+    make -j`nproc` && \
+    make install
+
+RUN python3 -m pip install /opt/onnxruntime/build/Release/dist/*.whl
+
+RUN mkdir -p /models && \
+    cd /models && \
+    wget -O resnet.tar.gz https://github.com/onnx/models/raw/main/vision/classification/resnet/model/resnet18-v1-7.tar.gz && \
+    tar -xvf resnet.tar.gz
+    
+#RUN python3 -c 'import onnxruntime as ort;sess=ort.InferenceSession("/models/resnet18-v1-7/resnet18-v1-7.onnx", providers=["CUDAExecutionProvider","CPUExecutionProvider"]);print(sess.get_providers());'
+
+###--------------------------------------------------------------BUILDING GEANT-4-------------------------------------------------------###
+
+FROM ep_base as g4_builder
+
+ENV G4_VERSION 11.0.1
+
+#ARG G4_URL=https://gitlab.cern.ch/geant4/geant4/-/archive/v${G4_VERSION}/geant4-v${G4_VERSION}.tar.gz
+
+ARG G4_URL=https://github.com/prikmm/geant4.git
+
+RUN apt-get update -y && \
+    apt-get install -y libexpat1 libexpat1-dev
+    
+RUN mkdir -p /opt/geant4/src && \
+    mkdir -p /opt/geant4/build && \
+    mkdir -p /opt/geant4/install && \
+    mkdir -p /opt/geant4/data && \
+    git clone --recursive -b Par04-optim-GSOC ${G4_URL} /opt/geant4/src
+    #curl -o /geant4.tar.gz ${G4_URL} && \
+    #tar xf /geant4.tar.gz -C /opt/geant4/src
+    
+RUN ls /opt/geant4/src
+    
+RUN cd /opt/geant4/build && \
+    cmake -DCMAKE_INSTALL_PREFIX=/opt/geant4/install \
+          -DGEANT4_INSTALL_DATA=ON \
+          -DGEANT4_INSTALL_DATADIR=/opt/geant4/data \
+          -DGEANT4_BUILD_MULTITHREADED=ON \
+          -DGEANT4_INSTALL_EXAMPLES=OFF \
+          -DGEANT4_USE_SYSTEM_EXPAT=ON \
+          #../src/geant4-v${G4_VERSION} && \
+          ../src && \
+    make -j`nproc` && \
+    make install
+
+###-------------------------------------------------------BUILDING PAR04 EXAMPLE----------------------------------------------------------------###
+
+RUN source /opt/geant4/install/bin/geant4.sh
+
+RUN mkdir -p /opt/Par04/src
+COPY . /opt/Par04/src/
+
+#RUN ls /opt/Par04/src
+
+#cp -r /opt/geant4/src/examples/extended/parameterisations/Par04/* /opt/Par04/src && \
+RUN cd /opt/Par04/src && \
+    rm -rf CMakeCache.txt CMakeFiles examplePar04 && \
+    cmake -DCMAKE_PREFIX_PATH="/opt/geant4/install;/opt/onnxruntime/install;/opt/onnxruntime/data" \
+    	  . && \
+    make -j`nproc` && \
+    make install
+
+#FROM ubuntu:focal
+
+#RUN apt-get update -y && \
+#    apt-get install -y cmake g++ libexpat1-dev && \
+#    apt-get autoremove -y && \
+#    apt-get clean -y && \
+#    rm -rf /var/cache/apt/archives/* && \
+#    rm -rf /var/lib/apt/lists/*
+#RUN mkdir -p /opt/geant4/data
+#COPY --from=builder /opt/geant4/install /opt/geant4/install
+#COPY entry-point.sh /entry-point.sh
+
+
+###-------------------------------------------------------INSTALLING GEANT-4 and PAR-04 ALONGSIDE ORT------------------------------------------------------###
+
+FROM ep_base as ort_base
+
+COPY --from=g4_builder /opt/geant4/data /opt/geant4/data
+COPY --from=g4_builder /opt/geant4/install /opt/geant4/install
+
+RUN source /opt/geant4/install/bin/geant4.sh
+
+COPY --from=g4_builder /opt/Par04/src /opt/Par04/src
+
+RUN echo ". /opt/geant4/install/bin/geant4.sh" >> ~/.bashrc
+
+RUN mkdir -p /opt/trt/geant4/cache
+
+WORKDIR /opt/Par04/src
+
+########### ROUGH BELOW ################
+#WORKDIR /root
+
+#ENTRYPOINT ["/entry-point.sh"]
+#CMD ["/bin/bash"]
+
+#cmake -DCMAKE_INSTALL_PREFIX=/home/priyammehta/Geant4-GSOC/geant4-v11.0.1-install \
+#	-DGEANT4_INSTALL_DATA=ON \ 
+#	-DGEANT4_INSTALL_DATADIR=/home/priyammehta/Geant4-GSOC/geant4-v11.0.1-data \
+#	-DGEANT4_BUILD_MULTITHREADED=ON \
+#	-DGEANT4_ISNTALL_EXAMPLES=OFF \
+#	-DGEANT4_USE_SYSTEM_EXPAT=ON

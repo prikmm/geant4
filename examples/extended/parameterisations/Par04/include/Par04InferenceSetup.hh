@@ -98,13 +98,33 @@ class Par04InferenceSetup
   /// Get path and name of the model
   inline G4String GetModelPathName() const { return fModelPathName; };
   /// Set profiling flag
-  inline void SetProfileFlag(G4int aNumber) { fProfileFlag = aNumber; };
+  inline void SetProfileFlag(G4int aNumber) { fProfileFlag = aNumber; G4cout << "PF" << aNumber << "Class PF" << fProfileFlag << G4endl; };
   /// Get profiling flag
   inline G4int GetProfileFlag() const { return fProfileFlag; };
   /// Set optimization flag
-  inline void SetOptimizationFlag(G4int aNumber) { fOptimizationFlag = aNumber; };
+  inline void SetOptimizationFlag(G4int aNumber) { fOptimizationFlag = aNumber; G4cout << "OF" << aNumber << "Class OF" << fOptimizationFlag << G4endl; };
   /// Get optimization flag
   inline G4int GetOptimizationFlag() const { return fOptimizationFlag; };
+
+  //...................Onnx Runtime Execution Provider Setup...................
+  /// Setting execution providers flags
+
+  /// CPU
+  inline void SetDnnlFlag(G4int aNumber) { fDnnlFlag = aNumber; G4cout << "Dnnl" << aNumber << "Class DNNL" << fDnnlFlag << G4endl; };
+  inline G4int GetDnnlFlag() const { return fDnnlFlag; };
+
+  inline void SetOpenVinoFlag(G4int aNumber) { fOpenVinoFlag = aNumber; G4cout << "OpenVino" << aNumber << "Class OpenVino" << fOpenVinoFlag << G4endl;};
+  inline G4int GetOpenVinoFlag() const { return fOpenVinoFlag; };
+
+  /// GPU
+  inline void SetCudaFlag(G4int aNumber) { fCudaFlag = aNumber; G4cout << "CUDA" << aNumber << "Class CUDA" << fCudaFlag << G4endl;};
+  inline G4int GetCudaFlag() const { return fCudaFlag; };
+
+  inline void SetTensorrtFlag(G4int aNumber) { fTensorrtFlag = aNumber; G4cout << "TRT" << aNumber << "Class TRT" << fTensorrtFlag << G4endl;};
+  inline G4int GetTensorrtFlag() const { return fTensorrtFlag; };
+
+  //.....................................End.................................
+
   /// Get name of the inference library
   inline G4String GetInferenceLibrary() const { return fInferenceLibrary; };
   /// Set name of the inference library and create a pointer to chosen inference interface
@@ -143,20 +163,6 @@ class Par04InferenceSetup
   /// rotation
   void GetPositions(std::vector<G4ThreeVector>& aDepositsPositions, G4ThreeVector aParticlePosition,
                     G4ThreeVector aParticleDirection);
-
-  //...................Onnx Runtime Execution Provider Setup...................
-  /// Setting execution providers flags
-  /// CPU
-  inline void SetDnnlEPFlag(G4bool aIfDnnlEP) { fDnnlEpFlag = aIfDnnlEP; };
-  inline G4bool GetDnnlEPFlag() const { return fDnnlEpFlag; };
-  inline void SetOpevinoEPFlag(G4bool aIfOpenVinoEP) { fOpenVinoEpFlag = aIfOpenVinoEP; };
-  inline G4bool GetOpevinoEPFlag() const { return fOpenVinoEpFlag; };
-  /// GPU
-  inline void SetCudaEPFlag(G4bool aIfCudaEP) { fCudaEpFlag = aIfCudaEP; };
-  inline G4bool GetCudaEPFlag() const { return fCudaEpFlag; };
-  inline void SetTensorrtEPFlag(G4bool aIfTensorrtEP) { fTensorrtEpFlag = aIfTensorrtEP; };
-  inline G4bool GetTensorrtEPFlag() const { return fTensorrtEpFlag; };
-  //.....................................End.................................
 
  private:
   /// Pointer to detector construction to retrieve (once) the detector
@@ -200,11 +206,11 @@ class Par04InferenceSetup
 
   /// Flags for execution providers
   /// CPU
-  G4bool fDnnlEpFlag = false;
-  G4bool fOpenVinoEpFlag = false;
+  G4bool fDnnlFlag = false;
+  G4bool fOpenVinoFlag = false;
   /// GPU
-  G4bool fCudaEpFlag = false;
-  G4bool fTensorrtEpFlag = false;
+  G4bool fCudaFlag = false;
+  G4bool fTensorrtFlag = false;
 
 };
 

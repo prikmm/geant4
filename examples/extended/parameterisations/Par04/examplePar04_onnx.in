@@ -15,6 +15,7 @@
 /Par04/mesh/setNbOfZCells 45
 
 # Initialize
+/run/numberOfThreads 1
 /run/initialize
 
 /gun/energy 10 GeV
@@ -29,7 +30,11 @@
 ## path to the model which is set to download by cmake
 /Par04/inference/setModelPathName MLModels/Generator.onnx
 /Par04/inference/setProfileFlag 1
-/Par04/inference/setOptimizationFlag 0
+/Par04/inference/setOptimizationFlag 1
+/Par04/inference/setDnnlFlag 0
+/Par04/inference/setOpenVinoFlag 0
+/Par04/inference/setCudaFlag 1
+/Par04/inference/setTensorrtFlag 1
 /Par04/inference/setInferenceLibrary ONNX
 ## set mesh size for inference == mesh size of a full sim that
 ## was used for training; it coincides with readout mesh size

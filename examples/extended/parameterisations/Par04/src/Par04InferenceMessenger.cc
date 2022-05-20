@@ -86,6 +86,36 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   fOptimizationFlagCmd->AvailableForStates(G4State_Idle);
   fOptimizationFlagCmd->SetToBeBroadcasted(true);
 
+  // Onnx Runtime Execution Provider flag commands
+  fDnnlFlagCmd = new G4UIcmdWithAnInteger("/Par04/inference/setDnnlFlag", this);
+  fDnnlFlagCmd->SetGuidance("Whether to use DNNL Execution Provider for Onnx Runtime or not");
+  fDnnlFlagCmd->SetParameterName("DnnlFlag", false);
+  fDnnlFlagCmd->SetRange("DnnlFlag>-1");
+  fDnnlFlagCmd->AvailableForStates(G4State_Idle);
+  fDnnlFlagCmd->SetToBeBroadcasted(true);
+
+  fOpenVinoFlagCmd = new G4UIcmdWithAnInteger("/Par04/inference/setOpenVinoFlag", this);
+  fOpenVinoFlagCmd->SetGuidance("Whether to use OpenVino Execution Provider for Onnx Runtime or not");
+  fOpenVinoFlagCmd->SetParameterName("OpenVinoFlag", false);
+  fOpenVinoFlagCmd->SetRange("OpenVinoFlag>-1");
+  fOpenVinoFlagCmd->AvailableForStates(G4State_Idle);
+  fOpenVinoFlagCmd->SetToBeBroadcasted(true);
+
+  fCudaFlagCmd = new G4UIcmdWithAnInteger("/Par04/inference/setCudaFlag", this);
+  fCudaFlagCmd->SetGuidance("Whether to use CUDA Execution Provider for Onnx Runtime or not");
+  fCudaFlagCmd->SetParameterName("CudaFlag", false);
+  fCudaFlagCmd->SetRange("CudaFlag>-1");
+  fCudaFlagCmd->AvailableForStates(G4State_Idle);
+  fCudaFlagCmd->SetToBeBroadcasted(true);
+
+  fTensorrtFlagCmd = new G4UIcmdWithAnInteger("/Par04/inference/setTensorrtFlag", this);
+  fTensorrtFlagCmd->SetGuidance("Whether to use TensorRT Execution Provider for Onnx Runtime or not");
+  fTensorrtFlagCmd->SetParameterName("TensorrtFlag", false);
+  fTensorrtFlagCmd->SetRange("TensorrtFlag>-1");
+  fTensorrtFlagCmd->AvailableForStates(G4State_Idle);
+  fTensorrtFlagCmd->SetToBeBroadcasted(true);
+  //...................................................
+
   fMeshNbRhoCellsCmd = new G4UIcmdWithAnInteger("/Par04/inference/setNbOfRhoCells", this);
   fMeshNbRhoCellsCmd->SetGuidance("Set number of rho cells in the cylindrical mesh readout.");
   fMeshNbRhoCellsCmd->SetParameterName("NbRhoCells", false);
@@ -122,31 +152,6 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   fMeshSizeZCellsCmd->SetUnitCategory("Length");
   fMeshSizeZCellsCmd->AvailableForStates(G4State_Idle);
   fMeshSizeZCellsCmd->SetToBeBroadcasted(true);
-
-  /// Onnx Runtime Execution Provider flag commands
-  fDnnlFlagCmd = new G4UIcmdWithABool("/Par04/inference/setDnnlFlag", this);
-  fDnnlFlagCmd->SetGuidance("Whether to use DNNL Execution Provider for Onnx Runtime or not");
-  fDnnlFlagCmd->SetParameterName("DnnlFlag", false);
-  fDnnlFlagCmd->AvailableForStates(G4State_Idle);
-  fDnnlFlagCmd->SetToBeBroadcasted(true);
-
-  fOpenVinoFlagCmd = new G4UIcmdWithABool("/Par04/inference/setOpenVinoFlag", this);
-  fOpenVinoFlagCmd->SetGuidance("Whether to use OpenVino Execution Provider for Onnx Runtime or not");
-  fOpenVinoFlagCmd->SetParameterName("OpenVinoFlag", false);
-  fOpenVinoFlagCmd->AvailableForStates(G4State_Idle);
-  fOpenVinoFlagCmd->SetToBeBroadcasted(true);
-
-  fCudaFlagCmd = new G4UIcmdWithABool("/Par04/inference/setCudaFlag", this);
-  fCudaFlagCmd->SetGuidance("Whether to use CUDA Execution Provider for Onnx Runtime or not");
-  fCudaFlagCmd->SetParameterName("CudaFlag", false);
-  fCudaFlagCmd->AvailableForStates(G4State_Idle);
-  fCudaFlagCmd->SetToBeBroadcasted(true);
-
-  fTensorrtFlagCmd = new G4UIcmdWithABool("/Par04/inference/setTensorrtFlag", this);
-  fTensorrtFlagCmd->SetGuidance("Whether to use TensorRT Execution Provider for Onnx Runtime or not");
-  fTensorrtFlagCmd->SetParameterName("TensorrtFlag", false);
-  fTensorrtFlagCmd->AvailableForStates(G4State_Idle);
-  fTensorrtFlagCmd->SetToBeBroadcasted(true);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -159,17 +164,17 @@ Par04InferenceMessenger::~Par04InferenceMessenger()
   delete fModelPathNameCmd;
   delete fProfileFlagCmd;
   delete fOptimizationFlagCmd;
-  delete fMeshNbRhoCellsCmd;
-  delete fMeshNbPhiCellsCmd;
-  delete fMeshNbZCellsCmd;
-  delete fMeshSizeRhoCellsCmd;
-  delete fMeshSizeZCellsCmd;
-
   // Execution provider flags
   delete fDnnlFlagCmd;
   delete fOpenVinoFlagCmd;
   delete fCudaFlagCmd;
   delete fTensorrtFlagCmd;
+  //........................
+  delete fMeshNbRhoCellsCmd;
+  delete fMeshNbPhiCellsCmd;
+  delete fMeshNbZCellsCmd;
+  delete fMeshSizeRhoCellsCmd;
+  delete fMeshSizeZCellsCmd;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -194,13 +199,37 @@ void Par04InferenceMessenger::SetNewValue(G4UIcommand* aCommand, G4String aNewVa
   }
   if(aCommand == fProfileFlagCmd)
   {
+    G4cout << "Setting Profile Flag" << G4endl;
     fInference->SetProfileFlag(std::stoi(aNewValue));
   }
   if(aCommand == fOptimizationFlagCmd)
   {
+    G4cout << "Setting Optimization" << G4endl;
     fInference->SetOptimizationFlag(std::stoi(aNewValue));
   }
-  else if(aCommand == fMeshNbRhoCellsCmd)
+  /// Onnx Runtime Execution Provider Flags
+  if (aCommand == fDnnlFlagCmd)
+  {
+    G4cout << "Setting Dnnl" << G4endl;
+    fInference->SetDnnlFlag(std::stoi(aNewValue));
+  } 
+  if (aCommand == fOpenVinoFlagCmd)
+  {
+    G4cout << "Setting OpenVino" << G4endl;
+    fInference->SetOpenVinoFlag(std::stoi(aNewValue));
+  }
+  if (aCommand == fCudaFlagCmd)
+  {
+    G4cout << "Setting Cuda" << G4endl;
+    fInference->SetCudaFlag(std::stoi(aNewValue));
+  }
+  if (aCommand == fTensorrtFlagCmd)
+  {
+    G4cout << "Setting Tensorrt" << G4endl;
+    fInference->SetTensorrtFlag(std::stoi(aNewValue));
+  } 
+  /// ORT EP END
+  if(aCommand == fMeshNbRhoCellsCmd)
   {
     fInference->SetMeshNbOfCells(0, fMeshNbRhoCellsCmd->GetNewIntValue(aNewValue));
   }
@@ -222,24 +251,6 @@ void Par04InferenceMessenger::SetNewValue(G4UIcommand* aCommand, G4String aNewVa
   {
     fInference->SetMeshSizeOfCells(2, fMeshSizeZCellsCmd->GetNewDoubleValue(aNewValue));
   }
-
-  /// Onnx Runtime Execution Provider Flags
-  if (aCommand == fDnnlFlagCmd)
-  {
-    fInference->SetDnnlEPFlag(fDnnlFlagCmd->GetNewBoolValue(aNewValue));
-  } 
-  if (aCommand == fOpenVinoFlagCmd)
-  {
-    fInference->SetOpevinoEPFlag(fOpenVinoFlagCmd->GetNewBoolValue(aNewValue));
-  }
-  if (aCommand == fCudaFlagCmd)
-  {
-    fInference->SetCudaEPFlag(fCudaFlagCmd->GetNewBoolValue(aNewValue));
-  }
-  if (aCommand == fTensorrtFlagCmd)
-  {
-    fInference->SetTensorrtEPFlag(fTensorrtFlagCmd->GetNewBoolValue(aNewValue));
-  } 
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -266,13 +277,31 @@ G4String Par04InferenceMessenger::GetCurrentValue(G4UIcommand* aCommand)
   }
   if(aCommand == fProfileFlagCmd)
   {
-    cv = fSizeLatentVectorCmd->ConvertToString(fInference->GetProfileFlag());
+    cv = fProfileFlagCmd->ConvertToString(fInference->GetProfileFlag());
   }
   if(aCommand == fOptimizationFlagCmd)
   {
-    cv = fSizeLatentVectorCmd->ConvertToString(fInference->GetOptimizationFlag());
+    cv = fOptimizationFlagCmd->ConvertToString(fInference->GetOptimizationFlag());
   }
-  else if(aCommand == fMeshNbRhoCellsCmd)
+  /// Onnx Runtime Execution Provider Flags
+  if (aCommand == fDnnlFlagCmd)
+  {
+    cv = fDnnlFlagCmd->ConvertToString(fInference->GetDnnlFlag());
+  } 
+  else if (aCommand == fOpenVinoFlagCmd)
+  {
+    cv = fOpenVinoFlagCmd->ConvertToString(fInference->GetOpenVinoFlag());
+  }
+  else if (aCommand == fCudaFlagCmd)
+  {
+    cv = fCudaFlagCmd->ConvertToString(fInference->GetCudaFlag());
+  }
+  else if (aCommand == fTensorrtFlagCmd)
+  {
+    cv = fTensorrtFlagCmd->ConvertToString(fInference->GetTensorrtFlag());
+  }
+  /// ORT EP END
+  if(aCommand == fMeshNbRhoCellsCmd)
   {
     cv = fMeshNbRhoCellsCmd->ConvertToString(fInference->GetMeshNbOfCells()[0]);
   }
@@ -291,24 +320,6 @@ G4String Par04InferenceMessenger::GetCurrentValue(G4UIcommand* aCommand)
   else if(aCommand == fMeshSizeZCellsCmd)
   {
     cv = fMeshSizeZCellsCmd->ConvertToString(fInference->GetMeshSizeOfCells()[2]);
-  }
-
-  /// Onnx Runtime Execution Provider Flags
-  if (aCommand == fDnnlFlagCmd)
-  {
-    cv = fDnnlFlagCmd->ConvertToString(fInference->GetDnnlEPFlag(aNewValue));
-  } 
-  else if (aCommand == fOpenVinoFlagCmd)
-  {
-    cv = fOpenVinoFlagCmd->ConvertToString(fInference->GetOpevinoEPFlag(aNewValue));
-  }
-  else if (aCommand == fCudaFlagCmd)
-  {
-    cv = fCudaFlagCmd->ConvertToString(fInference->GetCudaEPFlag(aNewValue));
-  }
-  else if (aCommand == fTensorrtFlagCmd)
-  {
-    cv = fTensorrtFlagCmd->ConvertToString(fInference->GetTensorrtEPFlag(aNewValue));
   }
 
   return cv;
