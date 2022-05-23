@@ -199,33 +199,27 @@ void Par04InferenceMessenger::SetNewValue(G4UIcommand* aCommand, G4String aNewVa
   }
   if(aCommand == fProfileFlagCmd)
   {
-    G4cout << "Setting Profile Flag" << G4endl;
     fInference->SetProfileFlag(std::stoi(aNewValue));
   }
   if(aCommand == fOptimizationFlagCmd)
   {
-    G4cout << "Setting Optimization" << G4endl;
     fInference->SetOptimizationFlag(std::stoi(aNewValue));
   }
   /// Onnx Runtime Execution Provider Flags
   if (aCommand == fDnnlFlagCmd)
   {
-    G4cout << "Setting Dnnl" << G4endl;
     fInference->SetDnnlFlag(std::stoi(aNewValue));
   } 
   if (aCommand == fOpenVinoFlagCmd)
   {
-    G4cout << "Setting OpenVino" << G4endl;
     fInference->SetOpenVinoFlag(std::stoi(aNewValue));
   }
   if (aCommand == fCudaFlagCmd)
   {
-    G4cout << "Setting Cuda" << G4endl;
     fInference->SetCudaFlag(std::stoi(aNewValue));
   }
   if (aCommand == fTensorrtFlagCmd)
   {
-    G4cout << "Setting Tensorrt" << G4endl;
     fInference->SetTensorrtFlag(std::stoi(aNewValue));
   } 
   /// ORT EP END

@@ -62,9 +62,7 @@ void Par04InferenceSetup::SetInferenceLibrary(G4String aName)
   fInferenceLibrary = aName;
 
 #ifdef USE_INFERENCE_ONNX
-  if(fInferenceLibrary == "ONNX")
-    G4cout << "Pro_n_Optim" << fProfileFlag << fOptimizationFlag << G4endl;
-    G4cout << "InferenceSetpp.cc " << fDnnlFlag << "," << fOpenVinoFlag << "," << fCudaFlag << "," << fTensorrtFlag << G4endl; 
+  if(fInferenceLibrary == "ONNX") 
     fInferenceInterface = std::unique_ptr<Par04InferenceInterface>(
       new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads, fDnnlFlag, fOpenVinoFlag, fCudaFlag, fTensorrtFlag));
 #endif

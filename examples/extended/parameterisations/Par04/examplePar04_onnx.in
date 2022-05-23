@@ -32,9 +32,9 @@
 /Par04/inference/setProfileFlag 1
 /Par04/inference/setOptimizationFlag 1
 /Par04/inference/setDnnlFlag 0
-/Par04/inference/setOpenVinoFlag 0
-/Par04/inference/setCudaFlag 1
-/Par04/inference/setTensorrtFlag 1
+/Par04/inference/setOpenVinoFlag 1
+/Par04/inference/setCudaFlag 0
+/Par04/inference/setTensorrtFlag 0
 /Par04/inference/setInferenceLibrary ONNX
 ## set mesh size for inference == mesh size of a full sim that
 ## was used for training; it coincides with readout mesh size

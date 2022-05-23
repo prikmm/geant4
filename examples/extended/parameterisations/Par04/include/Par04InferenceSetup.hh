@@ -98,11 +98,11 @@ class Par04InferenceSetup
   /// Get path and name of the model
   inline G4String GetModelPathName() const { return fModelPathName; };
   /// Set profiling flag
-  inline void SetProfileFlag(G4int aNumber) { fProfileFlag = aNumber; G4cout << "PF" << aNumber << "Class PF" << fProfileFlag << G4endl; };
+  inline void SetProfileFlag(G4int aNumber) { fProfileFlag = aNumber; };
   /// Get profiling flag
   inline G4int GetProfileFlag() const { return fProfileFlag; };
   /// Set optimization flag
-  inline void SetOptimizationFlag(G4int aNumber) { fOptimizationFlag = aNumber; G4cout << "OF" << aNumber << "Class OF" << fOptimizationFlag << G4endl; };
+  inline void SetOptimizationFlag(G4int aNumber) { fOptimizationFlag = aNumber; };
   /// Get optimization flag
   inline G4int GetOptimizationFlag() const { return fOptimizationFlag; };
 
@@ -110,17 +110,17 @@ class Par04InferenceSetup
   /// Setting execution providers flags
 
   /// CPU
-  inline void SetDnnlFlag(G4int aNumber) { fDnnlFlag = aNumber; G4cout << "Dnnl" << aNumber << "Class DNNL" << fDnnlFlag << G4endl; };
+  inline void SetDnnlFlag(G4int aNumber) { fDnnlFlag = aNumber; };
   inline G4int GetDnnlFlag() const { return fDnnlFlag; };
 
-  inline void SetOpenVinoFlag(G4int aNumber) { fOpenVinoFlag = aNumber; G4cout << "OpenVino" << aNumber << "Class OpenVino" << fOpenVinoFlag << G4endl;};
+  inline void SetOpenVinoFlag(G4int aNumber) { fOpenVinoFlag = aNumber; };
   inline G4int GetOpenVinoFlag() const { return fOpenVinoFlag; };
 
   /// GPU
-  inline void SetCudaFlag(G4int aNumber) { fCudaFlag = aNumber; G4cout << "CUDA" << aNumber << "Class CUDA" << fCudaFlag << G4endl;};
+  inline void SetCudaFlag(G4int aNumber) { fCudaFlag = aNumber; };
   inline G4int GetCudaFlag() const { return fCudaFlag; };
 
-  inline void SetTensorrtFlag(G4int aNumber) { fTensorrtFlag = aNumber; G4cout << "TRT" << aNumber << "Class TRT" << fTensorrtFlag << G4endl;};
+  inline void SetTensorrtFlag(G4int aNumber) { fTensorrtFlag = aNumber; };
   inline G4int GetTensorrtFlag() const { return fTensorrtFlag; };
 
   //.....................................End.................................

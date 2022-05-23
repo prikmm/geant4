@@ -32,8 +32,8 @@
 #include "CLHEP/Units/SystemOfUnits.h"
 #include "G4ThreeVector.hh"
 #include "globals.hh"
-#include "core/session/onnxruntime_cxx_api.h"
-#include "core/session/onnxruntime_c_api.h"
+#include "onnxruntime_cxx_api.h"
+#include "onnxruntime_c_api.h"
 
 /**
  * @brief Inference using the ONNX runtime.

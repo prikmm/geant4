@@ -278,6 +278,24 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 
+###------------------------------------------------------INSTALLING ONEDNN ALONGSIDE GEANT4, PAR04, ORT---------------------------------------------------###
+
+RUN mkdir -p /opt/onednn/src && \
+    mkdir -p /opt/onednn/build && \
+    mkdir -p /opt/onednn/install && \
+    git clone -b rls-v2.6 https://github.com/oneapi-src/oneDNN.git /opt/onednn/src
+    
+RUN cd /opt/onednn/build && \
+	cmake -DCMAKE_INSTALL_PREFIX=/opt/onednn/install \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_GPU_RUNTIME=OCL \
+		-DONEDNN_ENABLE_WORKLOAD=INFERENCE \
+		-DONEDNN_BUILD_EXAMPLES=OFF \
+		-DONEDNN_BUILD_TESTS=OFF\
+		../src
+RUN cd /opt/onednn/build && \
+    make -j`nproc` && \
+    make install
 
 ### ----------------------------------------------------------INSTALLING ONNXRUNTIME----------------------------------------------------###
 
@@ -399,6 +417,9 @@ FROM ep_base as ort_base
 COPY --from=g4_builder /opt/geant4/data /opt/geant4/data
 COPY --from=g4_builder /opt/geant4/install /opt/geant4/install
 
+ENV LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):/opt/onnxruntime/install/lib:/opt/onednn/install/include:/opt/onednn/install/lib
+ENV PATH=$(PATH):/opt/onednn/install/bin
+
 RUN source /opt/geant4/install/bin/geant4.sh
 
 COPY --from=g4_builder /opt/Par04/src /opt/Par04/src
@@ -406,6 +427,11 @@ COPY --from=g4_builder /opt/Par04/src /opt/Par04/src
 RUN echo ". /opt/geant4/install/bin/geant4.sh" >> ~/.bashrc
 
 RUN mkdir -p /opt/trt/geant4/cache
+
+RUN rm -rf /opt/onnxruntime/src && \
+	rm -rf /opt/onnxruntime/build && \
+	rm -rf /opt/onednn/src && \
+	rm -rf /opt/onednn/build
 
 WORKDIR /opt/Par04/src
 
