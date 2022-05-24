@@ -76,6 +76,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   else
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
 
+  #ifdef USE_DNNL
   if (dnnlFlag)
   {
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
@@ -90,6 +91,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, enable_cpu_mem_arena));
     
   }
+  #endif
+  #ifdef USE_OPENVINO
   if (openvinoFlag)
   {
     OrtOpenVINOProviderOptions ov_options;
@@ -108,6 +111,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     // fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
     G4cout << "Added OpenVINO Execution Provider" << G4endl;
   }
+  #endif
+  #ifdef USE_TENSORRT
   if (tensorrtFlag)
   {
     OrtTensorRTProviderOptionsV2 *fTrtOptions = nullptr;
@@ -130,7 +135,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
         "10",                    // trt_max_partition_iterations
         "5",                     // trt_min_subgraph_size
         "0",                     // trt_fp16_enable
-        "1",                     // trt_int8_enable
+        "0",                     // trt_int8_enable
         "1",                     // trt_int8_use_native_calibration_table
         "1",                     // trt_engine_cache_enable
         "/opt/trt/geant4/cache", // trt_engine_cache_path
@@ -151,7 +156,6 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
         "cudnn_conv_algo_search",
         "do_copy_in_default_stream",
         "cudnn_conv_use_max_workspace",
-        //"cudnn_conv1d_pad_to_nc1d"
     };
     std::vector<const char *> cuda_values{
         "0",                // device_id
@@ -160,13 +164,12 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
         "DEFAULT",          // cudnn_conv_algo_search
         "1",                // do_copy_in_default_stream
         "1",                // cudnn_conv_use_max_workspace
-        //"1"                   // cudnn_conv1d_pad_to_nc1d
     };
     Ort::ThrowOnError(ortApi.UpdateCUDAProviderOptions(fCudaOptions, cuda_keys.data(), cuda_values.data(), cuda_keys.size()));
     Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_CUDA_V2(fSessionOptions, fCudaOptions));
     G4cout << "Added CUDA Execution Provider" << G4endl;
   }
-
+  #endif
   if (profileFlag)
     fSessionOptions.EnableProfiling("opt.json");
 
@@ -183,6 +186,20 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
 // G4bool fCudaEpFlag
 //)
 {
+  /*
+  To get a demo input for ORTsample.cc
+
+  for (auto& input: aGenVector){
+    std::cout << input <<" ";
+  }
+  std::cout << std::endl;
+  for (auto& input: aEnergies){
+    std::cout << input <<" ";
+  }
+  std::cout <<std::endl;
+  std::cout << aSize << std::endl;
+  */
+ 
   // input nodes
   Ort::AllocatorWithDefaultOptions allocator;
   std::vector<int64_t> input_node_dims;

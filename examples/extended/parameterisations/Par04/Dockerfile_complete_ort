@@ -417,7 +417,7 @@ FROM ep_base as ort_base
 COPY --from=g4_builder /opt/geant4/data /opt/geant4/data
 COPY --from=g4_builder /opt/geant4/install /opt/geant4/install
 
-ENV LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):/opt/onnxruntime/install/lib:/opt/onednn/install/include:/opt/onednn/install/lib
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/onnxruntime/install/lib:/opt/onednn/install/include:/opt/onednn/install/lib
 ENV PATH=$(PATH):/opt/onednn/install/bin
 
 RUN source /opt/geant4/install/bin/geant4.sh

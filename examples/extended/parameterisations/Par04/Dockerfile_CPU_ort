@@ -4,25 +4,73 @@ ARG OPENVINO_VERSION=2022.1.0
 # Build stage
 FROM openvino/ubuntu18_runtime:${OPENVINO_VERSION} AS ort_builder
 
-ENV WORKDIR_PATH=/home/openvino
+ENV WORKDIR_PATH=/opt/onnxruntime
 WORKDIR $WORKDIR_PATH
 ENV DEBIAN_FRONTEND noninteractive
 
-ARG DEVICE=CPU_FP32 
-ARG ONNXRUNTIME_REPO=https://github.com/microsoft/onnxruntime.git
-ARG ONNXRUNTIME_BRANCH=master
+ARG ORT_VERSION=1.11.0
+ARG ORT_REPO=https://github.com/microsoft/onnxruntime.git
+ARG OPENVINO_DEVICE=CPU_FP32 
 
 ENV InferenceEngine_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
 
 USER root
 RUN apt update; apt install -y git protobuf-compiler libprotobuf-dev
-RUN git clone --recursive -b ${ONNXRUNTIME_BRANCH} ${ONNXRUNTIME_REPO} 
-RUN /bin/sh onnxruntime/dockerfiles/scripts/install_common_deps.sh
-RUN ln -s cmake-* cmake-dir
-RUN python3 -m pip install wheel
-ENV PATH=${WORKDIR_PATH}/cmake-dir/bin:$PATH
+
+#########################################################################################################################
+###--------------------------------------------------BUILDING ONEDNN--------------------------------------------------###
+#########################################################################################################################
+
+RUN mkdir -p /opt/onednn/src && \
+    mkdir -p /opt/onednn/build && \
+    mkdir -p /opt/onednn/install && \
+    git clone -b rls-v2.6 https://github.com/oneapi-src/oneDNN.git /opt/onednn/src
+    
+RUN cd /opt/onednn/build && \
+	cmake -DCMAKE_INSTALL_PREFIX=/opt/onednn/install \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_GPU_RUNTIME=OCL \
+		-DONEDNN_ENABLE_WORKLOAD=INFERENCE \
+		-DONEDNN_BUILD_EXAMPLES=OFF \
+		-DONEDNN_BUILD_TESTS=OFF\
+		../src
+RUN cd /opt/onednn/build && \
+    make -j`nproc` && \
+    make install
+    
+##########################################################################################################################
+###--------------------------------------------------BUILDING ONNXRUNTIME----------------------------------------------###
+##########################################################################################################################
+
+RUN mkdir -p ${WORKDIR_PATH}/src && \
+	mkdir -p ${WORKDIR_PATH}/build && \
+	mkdir -p ${WORKDIR_PATH}/install && \
+	git clone --recursive -b rel-${ORT_VERSION} ${ORT_REPO} ${WORKDIR_PATH}/src
+	
+RUN cd ${WORKDIR_PATH}/src && \
+	/bin/sh dockerfiles/scripts/install_common_deps.sh && \
+	ln -s cmake-* cmake-dir && \
+	python3 -m pip install wheel
+
+ENV PATH=${WORKDIR_PATH}/src/cmake-dir/bin:$PATH
+
 RUN pip3 install onnx
-RUN cd onnxruntime && ./build.sh --config Release --update --build --parallel --use_openvino ${DEVICE} --build_shared_lib --build_wheel 
+
+RUN cd ${WORKDIR_PATH}/src && \
+	./build.sh --config Release --update --build --parallel --build_shared_lib --build_wheel \
+		--use_dnnl \
+		--use_openvino ${DEVICE} \
+		--build_dir ${WORKDIR_PATH}/build \
+		--cmake_extra_defines CMAKE_INSTALL_PREFIX=${WORKDIR_PATH}/install ONNXRUNTIME_VERSION=$(cat ./VERSION_NUMBER) \
+		--skip_tests --skip_submodule_sync
+		
+RUN cd ${WORKDIR_PATH}/build/Release && \
+	make -j7 && \
+	make install
+	
+ 
+RUN mkdir -p ${WORKDIR}/install/pywheels && \
+	 cp -r ${WORKDIR_PATH}/build/Release/dist/*.whl ${WORKDIR}/install/pywheels
 
 #Steps to download sources
 RUN cat /etc/apt/sources.list | sed 's/^# deb-src/deb-src/g' > ./temp; mv temp /etc/apt/sources.list
@@ -33,24 +81,108 @@ RUN apt-get source cron iso-codes libapt-inst2.0 lsb-release powermgmt-base pyth
 WORKDIR /
 RUN tar cvf GPL_sources.tar.gz /sources
 
-# Deploy stage
+##########################################################################################################################
+###----------------------------------------------------BUILDING GEANT4-------------------------------------------------###
+##########################################################################################################################
+
+FROM ort_builder as g4_builder
+
+ENV G4_VERSION 11.0.1
+
+#ARG G4_URL=https://gitlab.cern.ch/geant4/geant4/-/archive/v${G4_VERSION}/geant4-v${G4_VERSION}.tar.gz
+
+ARG G4_URL=https://github.com/prikmm/geant4.git
+
+RUN apt-get update -y && \
+    apt-get install -y libexpat1 libexpat1-dev
+    
+RUN mkdir -p /opt/geant4/src && \
+    mkdir -p /opt/geant4/build && \
+    mkdir -p /opt/geant4/install && \
+    mkdir -p /opt/geant4/data && \
+    git clone --recursive -b Par04-optim-GSOC ${G4_URL} /opt/geant4/src
+    #curl -o /geant4.tar.gz ${G4_URL} && \
+    #tar xf /geant4.tar.gz -C /opt/geant4/src
+    
+RUN ls /opt/geant4/src
+    
+RUN cd /opt/geant4/build && \
+    cmake -DCMAKE_INSTALL_PREFIX=/opt/geant4/install \
+          -DGEANT4_INSTALL_DATA=ON \
+          -DGEANT4_INSTALL_DATADIR=/opt/geant4/data \
+          -DGEANT4_BUILD_MULTITHREADED=ON \
+          -DGEANT4_INSTALL_EXAMPLES=OFF \
+          -DGEANT4_USE_SYSTEM_EXPAT=ON \
+          #../src/geant4-v${G4_VERSION} && \
+          ../src && \
+    make -j`nproc` && \
+    make install
+    
+RUN source /opt/geant4/install/bin/geant4.sh
+
+##############################################################################################################################
+###-----------------------------------------------------BUILDING PAR04-----------------------------------------------------###
+##############################################################################################################################
+
+FROM g4_builder as par04_builder
+
+RUN mkdir -p /opt/par04/src
+COPY . /opt/par04/src/
+
+RUN cd /opt/par04/src && \
+    rm -rf CMakeCache.txt CMakeFiles examplePar04 && \
+    cmake -DCMAKE_PREFIX_PATH="/opt/geant4/install;/opt/onnxruntime/install;/opt/onnxruntime/data" \
+    	  . && \
+    make -j`nproc` && \
+    make install
+    
+#############################################################################################################################
+###-------------------------------------------------------CLEANING UP-----------------------------------------------------###
+#############################################################################################################################
+
 FROM openvino/ubuntu18_runtime:${OPENVINO_VERSION}
 
 ENV DEBIAN_FRONTEND noninteractive
 USER root
-COPY --from=builder /home/openvino/onnxruntime/build/Linux/Release/dist/*.whl ./
-COPY --from=builder /GPL_sources.tar.gz ./
-RUN python3 -m pip install ./*.whl && rm ./*.whl
-RUN apt update; apt install -y unattended-upgrades && \
-    unattended-upgrade
-ARG BUILD_UID=1001
-ARG BUILD_USER=onnxruntimedev
-RUN adduser --uid $BUILD_UID $BUILD_USER
-RUN usermod -a -G video,users ${BUILD_USER}
-ENV WORKDIR_PATH /home/${BUILD_USER}
-WORKDIR ${WORKDIR_PATH}
 
-USER ${BUILD_USER}
+RUN mkdir -p /opt/onnxruntime && \
+	mkdir -p /opt/geant4/install && \
+	mkdir -p /opt/geant4/data && \
+	mkdir -p /opt/Par04
+
+COPY --from=ort_builder /opt/onednn/install /opt/onednn
+COPY --from=ort_builder /opt/onnxruntime/install /opt/onnxruntime
+COPY --from=g4_builder /opt/geant4/install /opt/geant4/install
+COPY --from=g4_builder /opt/geant4/data /opt/geant4/data
+COPY --from=par04_builder /opt/par04/src /opt/par04
+COPY --from=ort_builder /sources /sources
+
+
+RUN echo ". /opt/geant4/install/bin/geant4.sh" >> ~/.bashrc
+
 ENV PATH=${WORKDIR_PATH}/miniconda/bin:${WORKDIR_PATH}/cmake-dir/bin:$PATH
 ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
-ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/onnxruntime/lib:/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:/opt/onednn/include:/opt/onednn/lib
+
+#RUN cd /opt/onnxruntime && \
+#	ls /opt/onnxruntime && \
+#	python3 -m pip install ./*.whl
+
+RUN apt install -y vim
+
+WORKDIR /opt/par04
+							   #####
+###-------------------------------------------------------#END#-----------------------------------------------------------###
+							   #####	
+							    
+
+#ARG BUILD_UID=1001
+#ARG BUILD_USER=onnxruntimedev
+#RUN adduser --uid $BUILD_UID $BUILD_USER
+#RUN usermod -a -G video,users ${BUILD_USER}
+#ENV WORKDIR_PATH /home/${BUILD_USER}
+#WORKDIR ${WORKDIR_PATH}#
+
+#USER ${BUILD_USER}
+
+

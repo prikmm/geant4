@@ -335,3 +335,8 @@ CTestTestfile.cmake
 *.idb
 *.pdb
 
+*.json
+*.root
+MLModels
+examplePar04onnxdata-prefix
+~/geant4/.gitignore

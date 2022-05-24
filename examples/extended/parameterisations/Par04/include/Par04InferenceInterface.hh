@@ -28,6 +28,7 @@
 #define PAR04INFERENCEINTERFACE_HH
 
 #include "globals.hh"
+#include <vector>
 using namespace std;
 
 /**
