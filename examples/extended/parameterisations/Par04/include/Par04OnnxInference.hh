@@ -64,12 +64,12 @@ class Par04OnnxInference : public Par04InferenceInterface
 
  private:
   /// Pointer to the ONNX enviroment
-  //std::unique_ptr<Ort::Env> fEnv;
-  Ort::Env* fEnv;
+  std::unique_ptr<Ort::Env> fEnv;
+  //Ort::Env* fEnv;
   //Ort::Env fEnv = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   /// Pointer to the ONNX inference session
-  //std::unique_ptr<Ort::Session> fSession;
-  Ort::Session* fSession;
+  std::unique_ptr<Ort::Session> fSession;
+  //Ort::Session* fSession;
   //Ort::Session fSession;
   /// ONNX settings
   Ort::SessionOptions fSessionOptions;

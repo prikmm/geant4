@@ -51,10 +51,10 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     : Par04InferenceInterface()
 {
   // initialization of the enviroment and inference session
-  //auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
+  auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   //auto envLocal = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
-  //fEnv = std::move(envLocal);
-  fEnv = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ENV");
+  fEnv = std::move(envLocal);
+  //fEnv = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ENV");
 
   // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
   const auto &ortApi = Ort::GetApi();
@@ -171,10 +171,10 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   if (profileFlag)
     fSessionOptions.EnableProfiling("opt.json");
 
-  //auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
+  auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
   //auto sessionLocal = std::make_unique<Ort::Session>(fEnv, modelPath, fSessionOptions);
-  //fSession = std::move(sessionLocal);
-  fSession = new Ort::Session(*fEnv, modelPath, fSessionOptions);
+  fSession = std::move(sessionLocal);
+  //fSession = new Ort::Session(*fEnv, modelPath, fSessionOptions);
   
   G4cout << "Inference Session created" << G4endl;
   fInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemTypeDefault);
@@ -189,6 +189,7 @@ Par04OnnxInference::~Par04OnnxInference(){
   G4cout << "OnnxRuntime Session Released!" << G4endl;
   fEnv->release();
   G4cout << "OnnxRuntime Environment Released!" << G4endl;
+  G4cout << "Onnx Inference Destroyed" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

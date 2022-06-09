@@ -32,7 +32,7 @@
 /Par04/inference/setProfileFlag 1
 /Par04/inference/setOptimizationFlag 0
 /Par04/inference/setDnnlFlag 0
-/Par04/inference/setOpenVinoFlag 1
+/Par04/inference/setOpenVinoFlag 0
 /Par04/inference/setCudaFlag 0
 /Par04/inference/setTensorrtFlag 0
 /Par04/inference/setInferenceLibrary ONNX
