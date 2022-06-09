@@ -54,7 +54,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   //auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   //auto envLocal = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   //fEnv = std::move(envLocal);
-  fEnv = new Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
+  fEnv = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ENV");
 
   // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
   const auto &ortApi = Ort::GetApi();
@@ -103,8 +103,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     // ov_options.enable_opencl_throttling = false;     // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
 
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
-    // fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);
-    Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_OpenVINO(fSessionOptions, &ov_options));
+    fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);
+    //Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_OpenVINO(fSessionOptions, &ov_options));
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
     
     G4cout << "Added OpenVINO Execution Provider" << G4endl;
