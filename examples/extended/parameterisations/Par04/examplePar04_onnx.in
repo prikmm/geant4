@@ -30,9 +30,9 @@
 ## path to the model which is set to download by cmake
 /Par04/inference/setModelPathName MLModels/Generator.onnx
 /Par04/inference/setProfileFlag 1
-/Par04/inference/setOptimizationFlag 1
+/Par04/inference/setOptimizationFlag 0
 /Par04/inference/setDnnlFlag 0
-/Par04/inference/setOpenVinoFlag 1
+/Par04/inference/setOpenVinoFlag 0
 /Par04/inference/setCudaFlag 0
 /Par04/inference/setTensorrtFlag 0
 /Par04/inference/setInferenceLibrary ONNX
@@ -51,4 +51,4 @@
 /param/ActivateModel defineMesh
 ## ML fast sim, configured with the inference setup /Par04/inference
 /param/ActivateModel inferenceModel
-/run/beamOn 100
+/run/beamOn 1

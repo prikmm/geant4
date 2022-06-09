@@ -51,8 +51,10 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     : Par04InferenceInterface()
 {
   // initialization of the enviroment and inference session
-  auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "ENV");
-  fEnv = std::move(envLocal);
+  //auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
+  //auto envLocal = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
+  //fEnv = std::move(envLocal);
+  fEnv = new Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
 
   // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
   const auto &ortApi = Ort::GetApi();
@@ -61,16 +63,15 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   // auto ortApibase = OrtGetApiBase();
   // auto ortApi = ortApibase->GetApi(ORT_API_VERSION);
 
-  // G4cout << profileFlag << "," << optimizeFlag << G4endl;
-  // G4cout << dnnlFlag << "," << openvinoFlag << "," << cudaFlag << "," << tensorrtFlag << G4endl;
-
   // graph optimizations of the model
   // if the flag is not set to true none of the optimizations will be applied
   // if it is set to true all the optimizations will be applied
-  if (optimizeFlag && (dnnlFlag || cudaFlag))
+  if (optimizeFlag)
   {
     fSessionOptions.SetOptimizedModelFilePath("opt-graph");
     fSessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
+    G4cout << "Optimization Enabled! If you get an error regarding \
+               compiled nodes, turn off optimization and try again" << G4endl;
     // ORT_ENABLE_BASIC #### ORT_ENABLE_EXTENDED
   }
   else
@@ -80,10 +81,6 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   if (dnnlFlag)
   {
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
-    // std::vector<std::string> availableProviders = Ort::GetAvailableProviders();
-    // for(std::string ep : availableProviders ){
-    //   G4cout << ep << G4endl;
-    // }
     //  save json file for model execution profiling
     bool enable_cpu_mem_arena = true;
 
@@ -97,18 +94,19 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   {
     OrtOpenVINOProviderOptions ov_options;
     ov_options.device_type = "CPU_FP32";
-    // ov_options.enable_vpu_fast_compile = 0;
-    // ov_options.device_id = "";
+    // ov_options.enable_vpu_fast_compile = 0;          // For Myraid VPU
+    // ov_options.device_id = "";                       // Openvino finds a random hardware when not given
     ov_options.num_of_threads = 1;
-    // ov_options.use_compiled_network = false;
-    // ov_options.blob_dump_path = "";
-    // ov_options.context = "0x123456ff";  // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
-    // ov_options.enable_opencl_throttling = false;
+    // ov_options.use_compiled_network = false;         // For Myraid VPU
+    // ov_options.blob_dump_path = "";                  // For Myraid VPU
+    // ov_options.context = "0x123456ff";               // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
+    // ov_options.enable_opencl_throttling = false;     // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
 
+    fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
     // fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);
     Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_OpenVINO(fSessionOptions, &ov_options));
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
-    // fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
+    
     G4cout << "Added OpenVINO Execution Provider" << G4endl;
   }
   #endif
@@ -173,33 +171,32 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   if (profileFlag)
     fSessionOptions.EnableProfiling("opt.json");
 
-  auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
-  fSession = std::move(sessionLocal);
+  //auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
+  //auto sessionLocal = std::make_unique<Ort::Session>(fEnv, modelPath, fSessionOptions);
+  //fSession = std::move(sessionLocal);
+  fSession = new Ort::Session(*fEnv, modelPath, fSessionOptions);
+  
   G4cout << "Inference Session created" << G4endl;
   fInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemTypeDefault);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+Par04OnnxInference::~Par04OnnxInference(){
+  //fInfo->release();
+  //G4cout << "OnnxRuntime Memory Info Release!" << G4endl;
+  fSession->release();
+  G4cout << "OnnxRuntime Session Released!" << G4endl;
+  fEnv->release();
+  G4cout << "OnnxRuntime Environment Released!" << G4endl;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
 void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4double> &aEnergies,
                                       int aSize)
-// G4bool fCudaEpFlag
 //)
 {
-  /*
-  To get a demo input for ORTsample.cc
-
-  for (auto& input: aGenVector){
-    std::cout << input <<" ";
-  }
-  std::cout << std::endl;
-  for (auto& input: aEnergies){
-    std::cout << input <<" ";
-  }
-  std::cout <<std::endl;
-  std::cout << aSize << std::endl;
-  */
- 
   // input nodes
   Ort::AllocatorWithDefaultOptions allocator;
   std::vector<int64_t> input_node_dims;
@@ -263,9 +260,11 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
   for (int i = 0; i < aSize; ++i)
     aEnergies[i] = floatarr[i];
 
-  // if (fCudaEpFlag) {
-  // ReleaseCUDAProviderOptions(fCudaOptions); //}
   G4cout << "Inference Complete" << G4endl;
+
+  //Ort::OrtRelease(fSession);
+  //Ort::OrtRelease(fEnv);
+
 }
 
 #endif

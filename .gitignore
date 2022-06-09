@@ -339,4 +339,8 @@ CTestTestfile.cmake
 *.root
 MLModels
 examplePar04onnxdata-prefix
+*.log
+*.ipynb
+examplePar04
+Par04OnnxInference copy.txt
 ~/geant4/.gitignore

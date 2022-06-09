@@ -168,7 +168,8 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/onnxruntime/lib:/opt/intel/opencl:${IN
 #	ls /opt/onnxruntime && \
 #	python3 -m pip install ./*.whl
 
-RUN apt install -y vim
+#RUN apt-get update && \
+#		apt-get install -y vim
 
 WORKDIR /opt/par04
 							   #####

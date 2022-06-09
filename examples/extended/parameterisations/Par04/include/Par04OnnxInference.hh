@@ -51,6 +51,8 @@ class Par04OnnxInference : public Par04InferenceInterface
                      G4int, G4int, G4int, G4int);   // For Execution Provider Runtime
   Par04OnnxInference();
 
+  virtual ~Par04OnnxInference();
+
   /// Run inference
   /// @param[in] aGenVector Input latent space and conditions
   /// @param[out] aEnergies Model output = generated shower energies
@@ -62,9 +64,13 @@ class Par04OnnxInference : public Par04InferenceInterface
 
  private:
   /// Pointer to the ONNX enviroment
-  std::unique_ptr<Ort::Env> fEnv;
+  //std::unique_ptr<Ort::Env> fEnv;
+  Ort::Env* fEnv;
+  //Ort::Env fEnv = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   /// Pointer to the ONNX inference session
-  std::unique_ptr<Ort::Session> fSession;
+  //std::unique_ptr<Ort::Session> fSession;
+  Ort::Session* fSession;
+  //Ort::Session fSession;
   /// ONNX settings
   Ort::SessionOptions fSessionOptions;
   /// ONNX memory info

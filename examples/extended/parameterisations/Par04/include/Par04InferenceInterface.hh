@@ -41,7 +41,12 @@ using namespace std;
 class Par04InferenceInterface
 {
  public:
-  virtual ~Par04InferenceInterface(){};
+  Par04InferenceInterface(){
+      G4cout << "Inference Interface created!" << G4endl;
+  };
+  virtual ~Par04InferenceInterface(){
+      G4cout << "Inference Interface destroyed" << G4endl;
+  };
 
   /// Run inference
   /// @param[in] aGenVector Input latent space and conditions
