@@ -59,7 +59,7 @@ class Par04InferenceSetup
 {
  public:
   Par04InferenceSetup();
-  ~Par04InferenceSetup();
+  virtual ~Par04InferenceSetup();
 
   /// Geometry setup
   /// Check if inference should be performed for the particle
@@ -123,6 +123,84 @@ class Par04InferenceSetup
   inline void SetTensorrtFlag(G4int aNumber) { fTensorrtFlag = aNumber; };
   inline G4int GetTensorrtFlag() const { return fTensorrtFlag; };
 
+
+  /// Setting EP Options
+  /// oneDNN
+  inline void SetDnnlEnableCpuMemArena(G4int aNumber) { fDnnlEnableCpuMemArena = aNumber; };
+  inline G4bool GetDnnlEnableCpuMemArena() const { return fDnnlEnableCpuMemArena; };
+
+  /// Cuda
+  inline void SetCudaDeviceId(G4String aNumber) { fCudaDeviceId = aNumber; };
+  inline G4String GetCudaDeviceId() const { return fCudaDeviceId; };
+
+  inline void SetCudaGpuMemLimit(G4String aNumber) { fCudaGpuMemLimit = aNumber; };
+  inline G4String GetCudaGpuMemLimit() const { return fCudaGpuMemLimit; };
+
+  inline void SetCudaArenaExtendedStrategy(G4String aNumber) { fCudaArenaExtendedStrategy = aNumber; };
+  inline G4String GetCudaArenaExtendedStrategy() const { return fCudaArenaExtendedStrategy; };
+
+  inline void SetCudaCudnnConvAlgoSearch(G4String aNumber) { fCudaCudnnConvAlgoSearch = aNumber; };
+  inline G4String GetCudaCudnnConvAlgoSearch() const { return fCudaCudnnConvAlgoSearch; };
+
+  inline void SetCudaDoCopyInDefaultStream(G4String aNumber) { fCudaDoCopyInDefaultStream = aNumber; };
+  inline G4String GetCudaDoCopyInDefaultStream() const { return fCudaDoCopyInDefaultStream; };
+
+  inline void SetCudaCudnnConvUseMaxWorkspace(G4String aNumber) { fCudaCudnnConvUseMaxWorkspace = aNumber; };
+  inline G4String GetCudaCudnnConvUseMaxWorkspace() const { return fCudaCudnnConvUseMaxWorkspace; };
+
+  /// TensorRT
+  inline void SetTrtDeviceId(G4String aNumber) { fTrtDeviceId = aNumber; };
+  inline G4String GetTrtDeviceId() const { return fTrtDeviceId; };
+
+  inline void SetTrtMaxWorkspaceSize(G4String aNumber) { fTrtMaxWorkspaceSize = aNumber; };
+  inline G4String GetTrtMaxWorkspaceSize() const { return fTrtMaxWorkspaceSize; };
+
+  inline void SetTrtMaxPartitionIterations(G4String aNumber) { fTrtMaxPartitionIterations = aNumber; };
+  inline G4String GetTrtMaxPartitionIterations() const { return fTrtMaxPartitionIterations; };
+
+  inline void SetTrtMinSubgraphSize(G4String aNumber) { fTrtMinSubgraphSize = aNumber; };
+  inline G4String GetTrtMinSubgraphSize() const { return fTrtMinSubgraphSize; };
+
+  inline void SetTrtFp16Enable(G4String aNumber) { fTrtFp16Enable = aNumber; };
+  inline G4String GetTrtFp16Enable() const { return fTrtFp16Enable; };
+
+  inline void SetTrtInt8Enable(G4String aNumber) { fTrtInt8Enable = aNumber; };
+  inline G4String GetTrtInt8Enable() const { return fTrtInt8Enable; };
+
+  inline void SetTrtInt8UseNativeCalibrationTable(G4String aNumber) { fTrtInt8UseNativeCalibrationTable = aNumber; };
+  inline G4String GetTrtInt8UseNativeCalibrationTable() const { return fTrtInt8UseNativeCalibrationTable; };
+
+  inline void SetTrtEngineCacheEnable(G4String aNumber) { fTrtEngineCacheEnable = aNumber; };
+  inline G4String GetTrtEngineCacheEnable() const { return fTrtEngineCacheEnable; };
+
+  inline void SetTrtEngineCachePath(G4String aNumber) { fTrtEngineCachePath = aNumber; };
+  inline G4String GetTrtEngineCachePath() const { return fTrtEngineCachePath; };
+
+  inline void SetTrtDumpSubgraphs(G4String aNumber) { fTrtDumpSubgraphs = aNumber; };
+  inline G4String GetTrtDumpSubgraphs() const { return fTrtDumpSubgraphs; };
+
+  /// OpenVINO
+  inline void SetOVDeviceType(G4String aNumber) { fOVDeviceType = aNumber; };
+  inline G4String GetOVDeviceType() const { return fOVDeviceType; };
+
+  inline void SetOVEnableVpuFastCompile(G4bool aNumber) { fOVEnableVpuFastCompile = aNumber; };
+  inline G4bool GetOVEnableVpuFastCompile() const { return fOVEnableVpuFastCompile; };
+
+  inline void SetOVDeviceId(G4String aNumber) { fOVDeviceId = aNumber; };
+  inline G4String GetOVDeviceId() const { return fOVDeviceId; };
+
+  inline void SetOVNumOfThreads(G4int aNumber) { fOVNumOfThreads = aNumber; };
+  inline G4int GetOVNumOfThreads() const { return fOVNumOfThreads; };
+
+  inline void SetOVUseCompiledNetwork(G4bool aNumber) { fOVUseCompiledNetwork = aNumber; };
+  inline G4bool GetOVUseCompiledNetwork() const { return fOVUseCompiledNetwork; };
+
+  inline void SetOVBlobDumpPath(G4String aNumber) { fOVBlobDumpPath = aNumber; };
+  inline G4String GetOVBlobDumpPath() const { return fOVBlobDumpPath; };
+
+  inline void SetOVEnableOpenCLThrottling(G4bool aNumber) { fOVEnableOpenCLThrottling = aNumber; };
+  inline G4bool GetOVEnableOpenCLThrottling() const { return fOVEnableOpenCLThrottling; };
+
   //.....................................End.................................
 
   /// Get name of the inference library
@@ -167,7 +245,7 @@ class Par04InferenceSetup
  private:
   /// Pointer to detector construction to retrieve (once) the detector
   /// dimensions
-  Par04DetectorConstruction* fDetector;
+  //Par04DetectorConstruction* fDetector;
   // Alpha parameter of the Sigma distribution
   /// Can be changed with UI command `/example/mesh/cylindrical <true/false>`
   bool fIfCylindrical = true;
@@ -211,6 +289,39 @@ class Par04InferenceSetup
   /// GPU
   G4bool fCudaFlag = false;
   G4bool fTensorrtFlag = false;
+
+  /// Execution Provider Options
+  /// oneDNN options
+  G4bool fDnnlEnableCpuMemArena = true;
+
+  /// Cuda options
+  G4String fCudaDeviceId = "0";
+  G4String fCudaGpuMemLimit = "2147483648";
+  G4String fCudaArenaExtendedStrategy = "kSameAsRequested";
+  G4String fCudaCudnnConvAlgoSearch = "DEFAULT";
+  G4String fCudaDoCopyInDefaultStream = "1";
+  G4String fCudaCudnnConvUseMaxWorkspace = "1";
+
+  /// TensorRT Options
+  G4String fTrtDeviceId = "0";
+  G4String fTrtMaxWorkspaceSize = "2147483648";
+  G4String fTrtMaxPartitionIterations = "10";
+  G4String fTrtMinSubgraphSize = "5";
+  G4String fTrtFp16Enable = "0";
+  G4String fTrtInt8Enable = "0";
+  G4String fTrtInt8UseNativeCalibrationTable = "1";
+  G4String fTrtEngineCacheEnable = "1";
+  G4String fTrtEngineCachePath = "/opt/trt/geant4/cache";
+  G4String fTrtDumpSubgraphs = "1";
+
+  /// OpenVINO Options
+  G4String fOVDeviceType = "CPU_FP32";
+  G4bool fOVEnableVpuFastCompile = false;                // For Myraid VPU
+  G4String fOVDeviceId = "";                             // Openvino finds a random hardware when not given
+  G4int fOVNumOfThreads = 1;      
+  G4bool fOVUseCompiledNetwork = false;              // For Myraid VPU
+  G4String fOVBlobDumpPath = "";                         // For Myraid VPU                             // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
+  G4bool fOVEnableOpenCLThrottling = false;          // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
 
 };
 

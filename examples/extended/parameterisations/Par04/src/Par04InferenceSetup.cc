@@ -29,6 +29,7 @@
 #include "Par04InferenceInterface.hh"
 #ifdef USE_INFERENCE_ONNX
 #include "Par04OnnxInference.hh"
+#include <variant>
 #endif
 #ifdef USE_INFERENCE_LWTNN
 #include "Par04LwtnnInference.hh"
@@ -44,7 +45,9 @@ Par04InferenceSetup::Par04InferenceSetup()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04InferenceSetup::~Par04InferenceSetup() {}
+Par04InferenceSetup::~Par04InferenceSetup() {
+  delete fInferenceMessenger;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -62,9 +65,80 @@ void Par04InferenceSetup::SetInferenceLibrary(G4String aName)
   fInferenceLibrary = aName;
 
 #ifdef USE_INFERENCE_ONNX
-  if(fInferenceLibrary == "ONNX") 
+  if(fInferenceLibrary == "ONNX"){
+  
+    // OpenVINO
+    /*std::map<std::string, const char *> openvino_options = {
+      {"device_type", fOVDeviceType.c_str()},
+      {"enable_vpu_fast_compile", fOVEnableVpuFastCompile.c_str()},
+      {"device_id", fOVDeviceId.c_str()},
+      {"num_of_threads", fOVNumOfThreads.c_str()},
+      {"use_compiled_network", fOVUseCompiledNetwork.c_str()},
+      {"blob_dump_path", fOVBlobDumpPath.c_str()},
+      //{"enable_opencl_throttling", fOVEnableOpenCLThrottling},
+    };
+    */
+    //OpenVINO 
+    std::vector<std::variant<const char *, G4int, G4bool>> openvino_options {
+        fOVDeviceType.c_str(),
+        fOVEnableVpuFastCompile,
+        fOVDeviceId.c_str(),
+        fOVNumOfThreads,
+        fOVUseCompiledNetwork,
+        fOVBlobDumpPath.c_str(),
+    };
+    // TensorRT
+    std::vector<const char *> trt_keys{
+        "device_id",
+        "trt_max_workspace_size",
+        "trt_max_partition_iterations",
+        "trt_min_subgraph_size",
+        "trt_fp16_enable",
+        "trt_int8_enable",
+        "trt_int8_use_native_calibration_table",
+        "trt_engine_cache_enable",
+        "trt_engine_cache_path",
+        "trt_dump_subgraphs",
+    };
+    std::vector<const char *> trt_values{
+        fTrtDeviceId.c_str(),                     
+        fTrtMaxWorkspaceSize.c_str(),            
+        fTrtMaxPartitionIterations.c_str(),                    
+        fTrtMinSubgraphSize.c_str(),                     
+        fTrtFp16Enable.c_str(),                     
+        fTrtInt8Enable.c_str(),                     
+        fTrtInt8UseNativeCalibrationTable.c_str(),                     
+        fTrtEngineCacheEnable.c_str(),                     
+        fTrtEngineCachePath.c_str(), 
+        fTrtDumpSubgraphs.c_str(),                
+    };
+    // CUDA
+    std::vector<const char *> cuda_keys{
+        "device_id",
+        "gpu_mem_limit",
+        "arena_extend_strategy",
+        "cudnn_conv_algo_search",
+        "do_copy_in_default_stream",
+        "cudnn_conv_use_max_workspace",
+    };
+    std::vector<const char *> cuda_values{
+        fCudaDeviceId.c_str(),
+        fCudaGpuMemLimit.c_str(),
+        fCudaArenaExtendedStrategy.c_str(),
+        fCudaCudnnConvAlgoSearch.c_str(),
+        fCudaDoCopyInDefaultStream.c_str(),
+        fCudaCudnnConvUseMaxWorkspace.c_str(),
+    };
+    
     fInferenceInterface = std::unique_ptr<Par04InferenceInterface>(
-      new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads, fDnnlFlag, fOpenVinoFlag, fCudaFlag, fTensorrtFlag));
+      new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads,
+                             fDnnlFlag, fOpenVinoFlag, fCudaFlag, fTensorrtFlag,
+                             fDnnlEnableCpuMemArena,
+                             openvino_options,
+                             cuda_keys, cuda_values,
+                             trt_keys, trt_values));
+  
+  }
 #endif
 #ifdef USE_INFERENCE_LWTNN
   if(fInferenceLibrary == "LWTNN")

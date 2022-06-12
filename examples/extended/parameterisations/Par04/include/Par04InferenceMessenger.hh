@@ -86,6 +86,46 @@ class Par04InferenceMessenger : public G4UImessenger
   G4UIcmdWithAnInteger* fCudaFlagCmd = nullptr;
   G4UIcmdWithAnInteger* fTensorrtFlagCmd = nullptr;
 
+  /// Commands for various execution provivder options
+  /// oneDNN commands
+  G4UIdirectory* fDnnlOptionsDir = nullptr;
+  G4UIcmdWithABool* fDnnlEnableCpuMemArenaCmd = nullptr;
+
+  /// Cuda Commands
+  G4UIdirectory* fCudaOptionsDir = nullptr;
+  G4UIcmdWithAString* fCudaDeviceIdCmd = nullptr;
+  G4UIcmdWithAString* fCudaGpuMemLimitCmd = nullptr;
+  G4UIcmdWithAString* fCudaArenaExtendedStrategyCmd = nullptr;
+  G4UIcmdWithAString* fCudaCudnnConvAlgoSearchCmd = nullptr;
+  G4UIcmdWithAString* fCudaDoCopyInDefaultStreamCmd = nullptr;
+  G4UIcmdWithAString* fCudaCudnnConvUseMaxWorkspaceCmd = nullptr;
+
+  /// TensorRT Commands
+  G4UIdirectory* fTensorRTOptionsDir = nullptr;
+  G4UIcmdWithAString* fTrtDeviceIdCmd = nullptr;
+  G4UIcmdWithAString* fTrtMaxWorkspaceSizeCmd = nullptr;
+  G4UIcmdWithAString* fTrtMaxPartitionIterationsCmd = nullptr;
+  G4UIcmdWithAString* fTrtMinSubgraphSizeCmd = nullptr;
+  G4UIcmdWithAString* fTrtFp16EnableCmd = nullptr;
+  G4UIcmdWithAString* fTrtInt8EnableCmd = nullptr;
+  G4UIcmdWithAString* fTrtInt8UseNativeCalibrationTableCmd = nullptr;
+  G4UIcmdWithAString* fTrtEngineCacheEnableCmd = nullptr;
+  G4UIcmdWithAString* fTrtEngineCachePathCmd = nullptr;
+  G4UIcmdWithAString* fTrtDumpSubgraphsCmd = nullptr;
+
+  /// OpenVINO commands
+  G4UIdirectory* fOpenVINOOptionsDir = nullptr;
+  G4UIcmdWithAString* fOVDeviceTypeCmd = nullptr;
+  G4UIcmdWithAnInteger* fOVEnableVpuFastCompileCmd = nullptr;
+  G4UIcmdWithAString* fOVDeviceIdCmd = nullptr;
+  G4UIcmdWithAnInteger* fOVNumOfThreadsCmd = nullptr;
+  G4UIcmdWithAnInteger* fOVUseCompiledNetworkCmd = nullptr;
+  G4UIcmdWithAString* fOVBlobDumpPathCmd = nullptr;
+  G4UIcmdWithAString* fOVEnableOpenCLThrottlingCmd = nullptr;
+
+
+  /// OnnxRuntime commands END
+
   /// Command to set the number of cells in the cylindrical readout mesh (along rho axis)
   G4UIcmdWithAnInteger* fMeshNbRhoCellsCmd = nullptr;
   /// Command to set the number of cells in the cylindrical readout mesh (along phi axis)

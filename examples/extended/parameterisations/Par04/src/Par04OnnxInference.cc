@@ -42,12 +42,19 @@
 #include "Par04OnnxExecutionProviders.hh"
 #include <vector>
 #include <cassert>
+#include <variant>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4int optimizeFlag,
-                                       G4int intraOpNumThreads, G4int dnnlFlag, G4int openvinoFlag,
-                                       G4int cudaFlag, G4int tensorrtFlag)
+Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4int optimizeFlag, G4int intraOpNumThreads,
+                                      G4int dnnlFlag, G4int openvinoFlag, G4int cudaFlag, G4int tensorrtFlag,
+                                      G4bool fDnnlEnableCpuMemArena,
+                                      //std::map<string, const char *> &openvino_options,
+                                      std::vector<std::variant<const char *, G4int, G4bool>> &openvino_options,
+                                      std::vector<const char *> &cuda_keys,
+                                      std::vector<const char *> &cuda_values,     
+                                      std::vector<const char *> &trt_keys,     
+                                      std::vector<const char *> &trt_values)
     : Par04InferenceInterface()
 {
   // initialization of the enviroment and inference session
@@ -82,10 +89,10 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   {
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
     //  save json file for model execution profiling
-    bool enable_cpu_mem_arena = true;
+    //  bool enable_cpu_mem_arena = true;
 
     // Currently, DNNL EP is not shown in the docs
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, enable_cpu_mem_arena));
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, fDnnlEnableCpuMemArena));
     
   }
   #endif
@@ -93,14 +100,12 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   if (openvinoFlag)
   {
     OrtOpenVINOProviderOptions ov_options;
-    ov_options.device_type = "CPU_FP32";
-    // ov_options.enable_vpu_fast_compile = 0;          // For Myraid VPU
-    // ov_options.device_id = "";                       // Openvino finds a random hardware when not given
-    ov_options.num_of_threads = 1;
-    // ov_options.use_compiled_network = false;         // For Myraid VPU
-    // ov_options.blob_dump_path = "";                  // For Myraid VPU
-    // ov_options.context = "0x123456ff";               // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
-    // ov_options.enable_opencl_throttling = false;     // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
+    ov_options.device_type = std::get<const char *>(openvino_options[0]);
+    ov_options.enable_vpu_fast_compile = std::get<unsigned char> (openvino_options[1]);          
+    ov_options.device_id = std::get<const char *> (openvino_options[2]);                       
+    ov_options.num_of_threads = std::get<int> (openvino_options[3]);
+    ov_options.use_compiled_network = std::get<unsigned char> (openvino_options[4]);         
+    ov_options.blob_dump_path = std::get<const char *> (openvino_options[5]);                               
 
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
     fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);
@@ -115,7 +120,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   {
     OrtTensorRTProviderOptionsV2 *fTrtOptions = nullptr;
     Ort::ThrowOnError(ortApi.CreateTensorRTProviderOptions(&fTrtOptions));
-    std::vector<const char *> trt_keys{
+    /*std::vector<const char *> trt_keys{
         "device_id",
         "trt_max_workspace_size",
         "trt_max_partition_iterations",
@@ -139,6 +144,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
         "/opt/trt/geant4/cache", // trt_engine_cache_path
         "1"                      // trt_dump_subgraphs
     };
+    */
     Ort::ThrowOnError(ortApi.UpdateTensorRTProviderOptions(fTrtOptions, trt_keys.data(), trt_values.data(), trt_keys.size()));
     Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_TensorRT_V2(fSessionOptions, fTrtOptions));
     G4cout << "Added TensorRT Execution Provider" << G4endl;
@@ -147,6 +153,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   {
     OrtCUDAProviderOptionsV2 *fCudaOptions = nullptr;
     Ort::ThrowOnError(ortApi.CreateCUDAProviderOptions(&fCudaOptions));
+    /*
     std::vector<const char *> cuda_keys{
         "device_id",
         "gpu_mem_limit",
@@ -163,6 +170,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
         "1",                // do_copy_in_default_stream
         "1",                // cudnn_conv_use_max_workspace
     };
+    */
     Ort::ThrowOnError(ortApi.UpdateCUDAProviderOptions(fCudaOptions, cuda_keys.data(), cuda_values.data(), cuda_keys.size()));
     Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_CUDA_V2(fSessionOptions, fCudaOptions));
     G4cout << "Added CUDA Execution Provider" << G4endl;

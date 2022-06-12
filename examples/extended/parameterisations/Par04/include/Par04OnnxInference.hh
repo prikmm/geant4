@@ -34,6 +34,9 @@
 #include "globals.hh"
 #include "onnxruntime_cxx_api.h"
 #include "onnxruntime_c_api.h"
+#include <vector>
+#include <variant>
+
 
 /**
  * @brief Inference using the ONNX runtime.
@@ -48,7 +51,14 @@ class Par04OnnxInference : public Par04InferenceInterface
 {
  public:
   Par04OnnxInference(G4String, G4int, G4int, G4int,
-                     G4int, G4int, G4int, G4int);   // For Execution Provider Runtime
+                     G4int, G4int, G4int, G4int,            // For Execution Provider Runtime Flags
+                     G4bool fDnnlEnableCpuMemArena,
+                     //std::map<string, const char *> &openvino_options,
+                     std::vector<std::variant<const char *, G4int, G4bool>> &openvino_options,
+                     std::vector<const char *> &cuda_keys,
+                     std::vector<const char *> &cuda_values,     
+                     std::vector<const char *> &trt_keys,     
+                     std::vector<const char *> &trt_values);
   Par04OnnxInference();
 
   virtual ~Par04OnnxInference();
@@ -57,10 +67,8 @@ class Par04OnnxInference : public Par04InferenceInterface
   /// @param[in] aGenVector Input latent space and conditions
   /// @param[out] aEnergies Model output = generated shower energies
   /// @param[in] aSize Size of the output
-  void RunInference(vector<float> aGenVector, std::vector<G4double>& aEnergies,
+  void RunInference(std::vector<float> aGenVector, std::vector<G4double>& aEnergies,
                     int aSize);
-                    //G4bool fCudaEpFlag
-                    //);
 
  private:
   /// Pointer to the ONNX enviroment

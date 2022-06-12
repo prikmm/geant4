@@ -26,6 +26,7 @@
 #ifndef PAR04DETECTORCONSTRUCTION_H
 #define PAR04DETECTORCONSTRUCTION_H
 
+
 #include <CLHEP/Units/SystemOfUnits.h>     // for cm, mm, pi, rad
 #include <G4String.hh>                     // for G4String
 #include <G4Types.hh>                      // for G4double, G4bool, G4int
@@ -36,6 +37,7 @@
 #include "G4SystemOfUnits.hh"              // for cm, mm, rad
 #include "G4ThreeVector.hh"                // for G4ThreeVector
 #include "G4VUserDetectorConstruction.hh"  // for G4VUserDetectorConstruction
+
 class G4LogicalVolume;
 class G4VPhysicalVolume;
 class Par04DetectorMessenger;
@@ -152,6 +154,7 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   G4ThreeVector fMeshNbOfCells = { 40, 50, 48 };
   ///  Mesh size of cells (dr, dphi, dz).
   G4ThreeVector fMeshSizeOfCells = { 5 * mm, 2 * CLHEP::pi / 50 * CLHEP::rad, 5 * mm };
+
 };
 
 #endif /* PAR04DETECTORCONSTRUCTION_H */
