@@ -50,7 +50,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
                                       G4int dnnlFlag, G4int openvinoFlag, G4int cudaFlag, G4int tensorrtFlag,
                                       G4bool fDnnlEnableCpuMemArena,
                                       //std::map<string, const char *> &openvino_options,
-                                      std::vector<std::variant<const char *, G4int, G4bool>> &openvino_options,
+                                      std::vector<std::variant<const char *, int>> &openvino_options,
                                       std::vector<const char *> &cuda_keys,
                                       std::vector<const char *> &cuda_values,     
                                       std::vector<const char *> &trt_keys,     
@@ -93,7 +93,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 
     // Currently, DNNL EP is not shown in the docs
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, fDnnlEnableCpuMemArena));
-    
+    G4cout << "Added oneDNN Execution Provider" << G4endl;
   }
   #endif
   #ifdef USE_OPENVINO
@@ -101,11 +101,11 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   {
     OrtOpenVINOProviderOptions ov_options;
     ov_options.device_type = std::get<const char *>(openvino_options[0]);
-    ov_options.enable_vpu_fast_compile = std::get<unsigned char> (openvino_options[1]);          
-    ov_options.device_id = std::get<const char *> (openvino_options[2]);                       
+    ov_options.enable_vpu_fast_compile = std::get<int> (openvino_options[1]);   
+    ov_options.device_id = std::get<const char *> (openvino_options[2]);                 
     ov_options.num_of_threads = std::get<int> (openvino_options[3]);
-    ov_options.use_compiled_network = std::get<unsigned char> (openvino_options[4]);         
-    ov_options.blob_dump_path = std::get<const char *> (openvino_options[5]);                               
+    ov_options.use_compiled_network = std::get<int> (openvino_options[4]);       
+    ov_options.blob_dump_path = std::get<const char *> (openvino_options[5]);                             
 
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
     fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);

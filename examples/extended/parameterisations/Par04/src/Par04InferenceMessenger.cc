@@ -117,7 +117,7 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
 
   /// OnnxRuntime Execution Provider Options
   /// oneDnn
-  fDnnlOptionsDir = new G4UIdirectory("/Par04/inference/onednn");
+  fDnnlOptionsDir = new G4UIdirectory("/Par04/inference/onednn/");
   fDnnlOptionsDir->SetGuidance("Commands for setting options for oneDNN execution provider");
 
   fDnnlEnableCpuMemArenaCmd = new G4UIcmdWithABool("/Par04/inference/onednn/setEnableCpuMemArena", this);
@@ -127,7 +127,7 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   fDnnlEnableCpuMemArenaCmd->SetToBeBroadcasted(true);
 
   /// Cuda
-  fCudaOptionsDir = new G4UIdirectory("/Par04/inference/cuda");
+  fCudaOptionsDir = new G4UIdirectory("/Par04/inference/cuda/");
   fCudaOptionsDir->SetGuidance("Commands for setting options for Cuda execution provider");
 
   fCudaDeviceIdCmd = new G4UIcmdWithAString("/Par04/inference/cuda/setDeviceId", this);
@@ -167,7 +167,7 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   fCudaCudnnConvUseMaxWorkspaceCmd->SetToBeBroadcasted(true);
 
   /// TensorRT
-  fTensorRTOptionsDir = new G4UIdirectory("/Par04/inference/trt");
+  fTensorRTOptionsDir = new G4UIdirectory("/Par04/inference/trt/");
   fTensorRTOptionsDir->SetGuidance("Commands for setting options for TensorRT execution provider");
 
   fTrtDeviceIdCmd = new G4UIcmdWithAString("/Par04/inference/trt/setDeviceId", this);
@@ -231,7 +231,7 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   fTrtDumpSubgraphsCmd->SetToBeBroadcasted(true);
 
   /// OpenVINO
-  fOpenVINOOptionsDir = new G4UIdirectory("/Par04/inference/openvino");
+  fOpenVINOOptionsDir = new G4UIdirectory("/Par04/inference/openvino/");
   fOpenVINOOptionsDir->SetGuidance("Commands for setting options for OpenVINO execution provider");
 
   fOVDeviceTypeCmd = new G4UIcmdWithAString("/Par04/inference/openvino/setDeviceType", this);

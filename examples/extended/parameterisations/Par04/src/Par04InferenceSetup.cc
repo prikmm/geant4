@@ -67,19 +67,8 @@ void Par04InferenceSetup::SetInferenceLibrary(G4String aName)
 #ifdef USE_INFERENCE_ONNX
   if(fInferenceLibrary == "ONNX"){
   
-    // OpenVINO
-    /*std::map<std::string, const char *> openvino_options = {
-      {"device_type", fOVDeviceType.c_str()},
-      {"enable_vpu_fast_compile", fOVEnableVpuFastCompile.c_str()},
-      {"device_id", fOVDeviceId.c_str()},
-      {"num_of_threads", fOVNumOfThreads.c_str()},
-      {"use_compiled_network", fOVUseCompiledNetwork.c_str()},
-      {"blob_dump_path", fOVBlobDumpPath.c_str()},
-      //{"enable_opencl_throttling", fOVEnableOpenCLThrottling},
-    };
-    */
     //OpenVINO 
-    std::vector<std::variant<const char *, G4int, G4bool>> openvino_options {
+    std::vector<std::variant<const char *, int>> openvino_options {
         fOVDeviceType.c_str(),
         fOVEnableVpuFastCompile,
         fOVDeviceId.c_str(),

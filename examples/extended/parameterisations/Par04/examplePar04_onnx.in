@@ -28,7 +28,7 @@
 ## size of the condition vector (energy, angle and geometry)  
 /Par04/inference/setSizeConditionVector 4
 ## path to the model which is set to download by cmake
-/Par04/inference/setModelPathName build/MLModels/Generator.onnx
+/Par04/inference/setModelPathName ./MLModels/Generator.onnx
 /Par04/inference/setProfileFlag 1
 /Par04/inference/setOptimizationFlag 0
 /Par04/inference/setDnnlFlag 0
@@ -36,6 +36,39 @@
 /Par04/inference/setCudaFlag 0
 /Par04/inference/setTensorrtFlag 0
 /Par04/inference/setInferenceLibrary ONNX
+
+# onednn options
+/Par04/inference/onednn/setEnableCpuMemArena 1
+
+# cuda options
+/Par04/inference/cuda/setDeviceId 0
+/Par04/inference/cuda/setGpuMemLimit 2147483648
+/Par04/inference/cuda/setArenaExtendedStrategy kSameAsRequested
+/Par04/inference/cuda/setCudnnConvAlgoSearch DEFAULT
+/Par04/inference/cuda/setDoCopyInDefaultStream 1
+/Par04/inference/cuda/setCudnnConvUseMaxWorkspace 1
+
+# tensorrt options
+/Par04/inference/trt/setDeviceId 0
+/Par04/inference/trt/setMaxWorkspaceSize 2147483648
+/Par04/inference/trt/setMaxPartitionIterations 10
+/Par04/inference/trt/setMinSubgraphSize 5
+/Par04/inference/trt/setFp16Enable 0
+/Par04/inference/trt/setInt8Enable 0
+/Par04/inference/trt/etInt8UseNativeCalibrationTable 1
+/Par04/inference/trt/setEngineCacheEnable 1
+/Par04/inference/trt/setEngineCachePath /opt/trt/geant4/cache
+/Par04/inference/trt/setDumpSubgraphs 1
+
+# openvino options
+/Par04/inference/openvino/setDeviceType CPU_FP32
+/Par04/inference/openvino/setEnableVpuFastCompile 0
+#/Par04/inference/openvino/setDeviceId 
+/Par04/inference/openvino/setNumOfThreads 1
+/Par04/inference/openvino/setUseCompiledNetwork 0
+#/Par04/inference/openvino/setBlobDumpPath 
+/Par04/inference/openvino/setEnableOpenCLThrottling 0
+
 ## set mesh size for inference == mesh size of a full sim that
 ## was used for training; it coincides with readout mesh size
 /Par04/inference/setSizeOfRhoCells 2.325 mm
