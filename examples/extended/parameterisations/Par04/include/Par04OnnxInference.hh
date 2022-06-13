@@ -73,14 +73,18 @@ class Par04OnnxInference : public Par04InferenceInterface
  private:
   /// Pointer to the ONNX enviroment
   std::unique_ptr<Ort::Env> fEnv;
-
+  //Ort::Env* fEnv = nullptr;
+  //Ort::Env fEnv;
+  //OrtEnv* fEnv;
   /// Pointer to the ONNX inference session
   std::unique_ptr<Ort::Session> fSession;
-
+  //Ort::Session* fSession = nullptr;
+  //Ort::Session fSession = Ort::Session();
+  //OrtSession* fSession;
   /// ONNX settings
   Ort::SessionOptions fSessionOptions;
   /// ONNX memory info
-  const OrtMemoryInfo* fInfo;
+  OrtMemoryInfo* fInfo;
   struct MemoryInfo;
   /// the input names represent the names given to the model
   /// when defining  the model's architecture (if applicable)

@@ -37,6 +37,8 @@
 #include "G4SystemOfUnits.hh"              // for cm, mm, rad
 #include "G4ThreeVector.hh"                // for G4ThreeVector
 #include "G4VUserDetectorConstruction.hh"  // for G4VUserDetectorConstruction
+#include "Par04MLFastSimModel.hh"
+#include "Par04DefineMeshModel.hh"
 
 class G4LogicalVolume;
 class G4VPhysicalVolume;
@@ -135,7 +137,7 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
 
  private:
   ///  Messenger that allows to modify geometry
-  Par04DetectorMessenger* fDetectorMessenger = nullptr;
+  std::unique_ptr<Par04DetectorMessenger> fDetectorMessenger;
   ///  Inner radius of the cylindrical detector
   G4double fDetectorInnerRadius = 80 * cm;
   ///  Length of the cylindrical detector (along z axis)
@@ -155,6 +157,8 @@ class Par04DetectorConstruction : public G4VUserDetectorConstruction
   ///  Mesh size of cells (dr, dphi, dz).
   G4ThreeVector fMeshSizeOfCells = { 5 * mm, 2 * CLHEP::pi / 50 * CLHEP::rad, 5 * mm };
 
+  std::unique_ptr<Par04DefineMeshModel> fDefineMeshModel;
+  std::unique_ptr<Par04MLFastSimModel> fMLFastSimModel; 
 };
 
 #endif /* PAR04DETECTORCONSTRUCTION_H */

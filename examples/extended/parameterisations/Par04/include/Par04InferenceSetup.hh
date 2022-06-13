@@ -31,7 +31,6 @@
 #include "globals.hh"
 #include "CLHEP/Units/SystemOfUnits.h"
 
-#include "Par04DetectorConstruction.hh"
 #include "Par04InferenceMessenger.hh"
 #include "Par04InferenceInterface.hh"
 
@@ -261,7 +260,8 @@ class Par04InferenceSetup
   /// Inference interface
   std::unique_ptr<Par04InferenceInterface> fInferenceInterface;
   /// Inference messenger
-  Par04InferenceMessenger* fInferenceMessenger;
+  //Par04InferenceMessenger* fInferenceMessenger;
+  std::unique_ptr<Par04InferenceMessenger> fInferenceMessenger;
   /// Maximum particle energy value (in MeV) in the training range
   float fMaxEnergy = 1024000.0;
   /// Maximum particle angle (in degrees) in the training range

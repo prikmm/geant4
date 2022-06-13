@@ -84,4 +84,4 @@
 /param/ActivateModel defineMesh
 ## ML fast sim, configured with the inference setup /Par04/inference
 /param/ActivateModel inferenceModel
-/run/beamOn 1
+/run/beamOn 2

@@ -40,13 +40,13 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04InferenceSetup::Par04InferenceSetup()
-  : fInferenceMessenger(new Par04InferenceMessenger(this))
+  : fInferenceMessenger(std::unique_ptr<Par04InferenceMessenger>(new Par04InferenceMessenger(this)))
 {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04InferenceSetup::~Par04InferenceSetup() {
-  delete fInferenceMessenger;
+  G4cout << "Inference Setup destroyed!" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -60,6 +60,7 @@ class Par04InferenceMessenger : public G4UImessenger
  private:
   /// Inference to setup
   Par04InferenceSetup* fInference = nullptr;
+  //std::unique_ptr<Par04InferenceSetup> fInference;
   /// Command to set the directory common to all inference messengers in this example
   /// /Par04
   G4UIdirectory* fExampleDir = nullptr;

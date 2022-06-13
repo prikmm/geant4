@@ -61,8 +61,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   //auto envLocal = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   fEnv = std::move(envLocal);
-  //fEnv = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ENV");
-
+  //fEnv = new Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
+  //fEnv = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ENV");
   // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
   const auto &ortApi = Ort::GetApi();
 
@@ -100,7 +100,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   if (openvinoFlag)
   {
     OrtOpenVINOProviderOptions ov_options;
-    ov_options.device_type = std::get<const char *>(openvino_options[0]);
+    ov_options.device_type = std::get<const char *> (openvino_options[0]);
     ov_options.enable_vpu_fast_compile = std::get<int> (openvino_options[1]);   
     ov_options.device_id = std::get<const char *> (openvino_options[2]);                 
     ov_options.num_of_threads = std::get<int> (openvino_options[3]);
@@ -183,7 +183,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   //auto sessionLocal = std::make_unique<Ort::Session>(fEnv, modelPath, fSessionOptions);
   fSession = std::move(sessionLocal);
   //fSession = new Ort::Session(*fEnv, modelPath, fSessionOptions);
-  
+  //fSession = new Ort::Session(fEnv, modelPath, fSessionOptions);
   G4cout << "Inference Session created" << G4endl;
   fInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemTypeDefault);
 }
@@ -193,11 +193,17 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 Par04OnnxInference::~Par04OnnxInference(){
   //fInfo->release();
   //G4cout << "OnnxRuntime Memory Info Release!" << G4endl;
-  fSession->release();
-  G4cout << "OnnxRuntime Session Released!" << G4endl;
-  fEnv->release();
-  G4cout << "OnnxRuntime Environment Released!" << G4endl;
-  G4cout << "Onnx Inference Destroyed" << G4endl;
+  //fSession->release();
+  //delete fSession;
+  //Ort::OrtRelease(fSession);
+  //G4cout << "OnnxRuntime Session released!" << G4endl;
+  //fEnv->release();
+  //delete fEnv;
+  //Ort::OrtRelease(fEnv);
+  //G4cout << "OnnxRuntime Environment released!" << G4endl;
+  //delete fInfo;
+  //Ort::OrtRelease(fInfo);
+  G4cout << "Onnx Inference destroyed!" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -260,7 +266,7 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
   G4cout << "Running Inference" << G4endl;
   std::vector<Ort::Value> ort_outputs =
       fSession->Run(Ort::RunOptions{nullptr}, fInames.data(), ort_inputs.data(), ort_inputs.size(),
-                    output_node_names.data(), output_node_names.size());
+                   output_node_names.data(), output_node_names.size());
   G4cout << "Successfully infered" << G4endl;
   // get pointer to output tensor float values
   float *floatarr = ort_outputs.front().GetTensorMutableData<float>();

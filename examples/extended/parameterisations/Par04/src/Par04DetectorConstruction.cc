@@ -59,15 +59,17 @@ class G4VPhysicalVolume;
 
 Par04DetectorConstruction::Par04DetectorConstruction()
   : G4VUserDetectorConstruction()
+  , fDetectorMessenger(std::unique_ptr<Par04DetectorMessenger>(new Par04DetectorMessenger(this)))
 {
-  fDetectorMessenger         = new Par04DetectorMessenger(this);
-  G4NistManager* nistManager = G4NistManager::Instance();
-  fAbsorberMaterial[0]       = nistManager->FindOrBuildMaterial("G4_PbWO4");
+  G4NistManager* nistManager  = G4NistManager::Instance();
+  fAbsorberMaterial[0]        = nistManager->FindOrBuildMaterial("G4_PbWO4");
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-Par04DetectorConstruction::~Par04DetectorConstruction() {}
+Par04DetectorConstruction::~Par04DetectorConstruction() {
+  G4cout << "Detector Construction Interface destroyed!" << G4endl;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -189,9 +191,11 @@ void Par04DetectorConstruction::ConstructSDandField()
 
   auto detectorRegion = G4RegionStore::GetInstance()->GetRegion("DetectorRegion");
   // Par04DefineMeshModel needs to be first model to call
-  new Par04DefineMeshModel("defineMesh", detectorRegion);
+  fDefineMeshModel = std::unique_ptr<Par04DefineMeshModel>(
+    new Par04DefineMeshModel("defineMesh", detectorRegion));
 #ifdef USE_INFERENCE
-  new Par04MLFastSimModel("inferenceModel", detectorRegion);
+  fMLFastSimModel = std::unique_ptr<Par04MLFastSimModel>(
+    new Par04MLFastSimModel("inferenceModel", detectorRegion));
 #endif
 }
 

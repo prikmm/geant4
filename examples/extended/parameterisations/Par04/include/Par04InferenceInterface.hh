@@ -45,7 +45,7 @@ class Par04InferenceInterface
       G4cout << "Inference Interface created!" << G4endl;
   };
   virtual ~Par04InferenceInterface(){
-      G4cout << "Inference Interface destroyed" << G4endl;
+      G4cout << "Inference Interface destroyed!" << G4endl;
   };
 
   /// Run inference

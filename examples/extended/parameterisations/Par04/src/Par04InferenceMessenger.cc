@@ -39,6 +39,7 @@ Par04InferenceMessenger::Par04InferenceMessenger(Par04InferenceSetup* aInference
   : G4UImessenger()
   , fInference(aInference)
 {
+
   fExampleDir = new G4UIdirectory("/Par04/");
   fExampleDir->SetGuidance("UI commands specific to this example");
 
@@ -370,6 +371,15 @@ Par04InferenceMessenger::~Par04InferenceMessenger()
   delete fMeshNbZCellsCmd;
   delete fMeshSizeRhoCellsCmd;
   delete fMeshSizeZCellsCmd;
+
+  delete fDnnlOptionsDir;
+  delete fCudaOptionsDir;
+  delete fTensorRTOptionsDir;
+  delete fOpenVINOOptionsDir;
+  delete fInferenceDir;
+  delete fExampleDir;
+
+  G4cout << "Inference Messenger destroyed!" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
