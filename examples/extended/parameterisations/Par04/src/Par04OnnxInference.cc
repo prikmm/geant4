@@ -49,7 +49,6 @@
 Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4int optimizeFlag, G4int intraOpNumThreads,
                                       G4int dnnlFlag, G4int openvinoFlag, G4int cudaFlag, G4int tensorrtFlag,
                                       G4bool fDnnlEnableCpuMemArena,
-                                      //std::map<string, const char *> &openvino_options,
                                       std::vector<std::variant<const char *, int>> &openvino_options,
                                       std::vector<const char *> &cuda_keys,
                                       std::vector<const char *> &cuda_values,     
@@ -59,10 +58,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 {
   // initialization of the enviroment and inference session
   auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
-  //auto envLocal = Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   fEnv = std::move(envLocal);
-  //fEnv = new Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
-  //fEnv = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ENV");
+
   // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
   const auto &ortApi = Ort::GetApi();
 
@@ -88,10 +85,6 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   if (dnnlFlag)
   {
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
-    //  save json file for model execution profiling
-    //  bool enable_cpu_mem_arena = true;
-
-    // Currently, DNNL EP is not shown in the docs
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Dnnl(fSessionOptions, fDnnlEnableCpuMemArena));
     G4cout << "Added oneDNN Execution Provider" << G4endl;
   }
@@ -109,7 +102,6 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 
     fSessionOptions.SetGraphOptimizationLevel(ORT_DISABLE_ALL);
     fSessionOptions.AppendExecutionProvider_OpenVINO(ov_options);
-    //Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_OpenVINO(fSessionOptions, &ov_options));
     fSessionOptions.SetIntraOpNumThreads(intraOpNumThreads);
     
     G4cout << "Added OpenVINO Execution Provider" << G4endl;
@@ -180,10 +172,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     fSessionOptions.EnableProfiling("opt.json");
 
   auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
-  //auto sessionLocal = std::make_unique<Ort::Session>(fEnv, modelPath, fSessionOptions);
   fSession = std::move(sessionLocal);
-  //fSession = new Ort::Session(*fEnv, modelPath, fSessionOptions);
-  //fSession = new Ort::Session(fEnv, modelPath, fSessionOptions);
   G4cout << "Inference Session created" << G4endl;
   fInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemTypeDefault);
 }
@@ -191,18 +180,6 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04OnnxInference::~Par04OnnxInference(){
-  //fInfo->release();
-  //G4cout << "OnnxRuntime Memory Info Release!" << G4endl;
-  //fSession->release();
-  //delete fSession;
-  //Ort::OrtRelease(fSession);
-  //G4cout << "OnnxRuntime Session released!" << G4endl;
-  //fEnv->release();
-  //delete fEnv;
-  //Ort::OrtRelease(fEnv);
-  //G4cout << "OnnxRuntime Environment released!" << G4endl;
-  //delete fInfo;
-  //Ort::OrtRelease(fInfo);
   G4cout << "Onnx Inference destroyed!" << G4endl;
 }
 
@@ -276,9 +253,6 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
     aEnergies[i] = floatarr[i];
 
   G4cout << "Inference Complete" << G4endl;
-
-  //Ort::OrtRelease(fSession);
-  //Ort::OrtRelease(fEnv);
 
 }
 

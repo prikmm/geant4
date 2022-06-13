@@ -316,11 +316,11 @@ class Par04InferenceSetup
 
   /// OpenVINO Options
   G4String fOVDeviceType = "CPU_FP32";
-  G4bool fOVEnableVpuFastCompile = false;                // For Myraid VPU
-  G4String fOVDeviceId = "";                             // Openvino finds a random hardware when not given
+  G4bool fOVEnableVpuFastCompile = false;            // For Myraid VPU
+  G4String fOVDeviceId = "";                         // Openvino finds a random hardware when not given
   G4int fOVNumOfThreads = 1;      
   G4bool fOVUseCompiledNetwork = false;              // For Myraid VPU
-  G4String fOVBlobDumpPath = "";                         // For Myraid VPU                             // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
+  G4String fOVBlobDumpPath = "";                     // For Myraid VPU                             
   G4bool fOVEnableOpenCLThrottling = false;          // For OpenCL, needs OpenVINO EP to be build with OpenCL flags
 
 };
