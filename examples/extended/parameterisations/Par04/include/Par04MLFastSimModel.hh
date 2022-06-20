@@ -61,8 +61,8 @@ class Par04MLFastSimModel : public G4VFastSimulationModel
 
  private:
   /// Inference model that is NN aware
-  //Par04InferenceSetup* fInference;
-  std::unique_ptr<Par04InferenceSetup> fInference;
+  Par04InferenceSetup* fInference;
+  //std::unique_ptr<Par04InferenceSetup> fInference;
   /// Inference model that is NN aware
   /// Helper class for creation of hits within the sensitive detector
   std::unique_ptr<G4FastSimHitMaker> fHitMaker;

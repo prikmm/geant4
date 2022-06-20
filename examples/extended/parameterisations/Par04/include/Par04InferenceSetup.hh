@@ -258,10 +258,11 @@ class Par04InferenceSetup
   /// Nz>/<Nr Nphi Nz>`
   G4ThreeVector fMeshNumber = G4ThreeVector(18, 50, 45);
   /// Inference interface
-  std::unique_ptr<Par04InferenceInterface> fInferenceInterface;
+  //  std::unique_ptr<Par04InferenceInterface> fInferenceInterface;
+  Par04InferenceInterface* fInferenceInterface;
   /// Inference messenger
-  //Par04InferenceMessenger* fInferenceMessenger;
-  std::unique_ptr<Par04InferenceMessenger> fInferenceMessenger;
+  //  std::unique_ptr<Par04InferenceMessenger> fInferenceMessenger;
+  Par04InferenceMessenger* fInferenceMessenger;
   /// Maximum particle energy value (in MeV) in the training range
   float fMaxEnergy = 1024000.0;
   /// Maximum particle angle (in degrees) in the training range

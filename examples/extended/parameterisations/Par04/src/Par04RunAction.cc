@@ -102,6 +102,8 @@ void Par04RunAction::BeginOfRunAction(const G4Run*)
     1024, 0, std::pow(cellNumRho * cellSizeRho, 2) / 5);  // arbitrary scaling of max value on axis
   analysisManager->CreateH1("hitType", "hit type;type (0=full, 1= fast);Entries", 2, -0.5, 1.5);
 
+  
+
   // Creating ntuple
   analysisManager->CreateNtuple("events", "per event data");
   analysisManager->CreateNtupleDColumn("EnergyMC");
@@ -110,6 +112,13 @@ void Par04RunAction::BeginOfRunAction(const G4Run*)
   analysisManager->CreateNtupleIColumn("phiCell", fEventAction->GetCalPhi());
   analysisManager->CreateNtupleIColumn("zCell", fEventAction->GetCalZ());
   analysisManager->CreateNtupleDColumn("SimTime");
+  #ifdef USE_ROOT
+  analysisManager->CreateNtupleDColumn("CPUResMem");
+  analysisManager->CreateNtupleDColumn("CPUVirMem");
+  #endif
+  #ifdef USE_CUDA
+  analysisManager->CreateNtupleDColumn("GPUMem");
+  #endif
   analysisManager->FinishNtuple();
 
   analysisManager->OpenFile();

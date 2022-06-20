@@ -343,4 +343,7 @@ examplePar04onnxdata-prefix
 *.ipynb
 examplePar04
 Par04OnnxInference copy.txt
+examplePar04-multithreaded.txt
 ~/geant4/.gitignore
+memory_footprint.cc
+mem_fp.out

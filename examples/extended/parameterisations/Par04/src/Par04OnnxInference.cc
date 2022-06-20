@@ -43,6 +43,13 @@
 #include <vector>
 #include <cassert>
 #include <variant>
+#ifdef USE_ROOT
+#include "TSystem.h"
+#endif
+#ifdef USE_CUDA
+//#include "cuda.h"
+#include "cuda_runtime_api.h"
+#endif
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -59,7 +66,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
   // initialization of the enviroment and inference session
   auto envLocal = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   fEnv = std::move(envLocal);
-
+  //fEnv = new Ort::Env(ORT_LOGGING_LEVEL_VERBOSE, "ENV");
   // Creating a OrtApi Class variable for getting access to C api, necessary for CUDA and TensorRT EP.
   const auto &ortApi = Ort::GetApi();
 
@@ -141,6 +148,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
     Ort::ThrowOnError(ortApi.SessionOptionsAppendExecutionProvider_TensorRT_V2(fSessionOptions, fTrtOptions));
     G4cout << "Added TensorRT Execution Provider" << G4endl;
   }
+  #endif
+  #ifdef USE_CUDA
   if (cudaFlag)
   {
     OrtCUDAProviderOptionsV2 *fCudaOptions = nullptr;
@@ -173,6 +182,7 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 
   auto sessionLocal = std::make_unique<Ort::Session>(*fEnv, modelPath, fSessionOptions);
   fSession = std::move(sessionLocal);
+  //fSession = new Ort::Session(*fEnv, modelPath, fSessionOptions);
   G4cout << "Inference Session created" << G4endl;
   fInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemTypeDefault);
 }
@@ -180,6 +190,8 @@ Par04OnnxInference::Par04OnnxInference(G4String modelPath, G4int profileFlag, G4
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04OnnxInference::~Par04OnnxInference(){
+  //fSession->release();
+  //fEnv->release();
   G4cout << "Onnx Inference destroyed!" << G4endl;
 }
 
@@ -189,7 +201,36 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
                                       int aSize)
 //)
 {
+  /*
+  G4cout << "\nInside Run" << G4endl;
+  const G4float toMB = 1.f / 1024.f;
   // input nodes
+  #ifdef USE_CUDA
+  size_t free, total;
+  G4int num_gpus;
+  G4double tot_res_mem_before = 0;
+	G4double tot_virt_mem_before = 0;
+  cudaGetDeviceCount( &num_gpus );
+  G4double usage_mem_gpu_before = 0;
+  for ( int gpu_id = 0; gpu_id < num_gpus; gpu_id++ ) {
+        cudaSetDevice( gpu_id );
+        //int id;
+        //cudaGetDevice( &id );
+        cudaMemGetInfo( &free, &total );
+        usage_mem_gpu_before += total - free;
+        //std::cout << "GPU " << id << " memory: free=" << free << ", total=" << total << std::endl;
+  }
+  G4cout << "GPU mem before Run: " << usage_mem_gpu_before * toMB << G4endl;
+  #endif
+  #ifdef USE_ROOT
+  static ProcInfo_t info;
+  gSystem->GetProcInfo(&info);
+  tot_res_mem_before = info.fMemResident * toMB;
+	tot_virt_mem_before = info.fMemVirtual * toMB;
+  G4cout << "CPU resident mem before Run: " << tot_res_mem_before << "\n"
+         << "CPU virtual mem before Run: " << tot_virt_mem_before << G4endl;
+  #endif
+  */
   Ort::AllocatorWithDefaultOptions allocator;
   std::vector<int64_t> input_node_dims;
   size_t num_input_nodes = fSession->GetInputCount();
@@ -253,7 +294,43 @@ void Par04OnnxInference::RunInference(vector<float> aGenVector, std::vector<G4do
     aEnergies[i] = floatarr[i];
 
   G4cout << "Inference Complete" << G4endl;
+// Memory Usage extraction
+  /*
+  #ifdef USE_ROOT
+  gSystem->GetProcInfo(&info);
+  G4double tot_res_mem_after = info.fMemResident * toMB;
+	G4double tot_virt_mem_after = info.fMemVirtual * toMB;
+  G4double tot_res_mem = tot_res_mem_after - tot_res_mem_before;
+	G4double tot_virt_mem = tot_virt_mem_after - tot_virt_mem_before;
+  //analysisManager->FillNtupleDColumn(6, tot_res_mem);
+  //analysisManager->FillNtupleDColumn(7, tot_virt_mem);
+  G4cout << "CPU resident mem after Run: " << tot_res_mem_after << "\n"
+         << "CPU virtual mem after Run: " << tot_virt_mem_after << G4endl;
+  G4cout << "CPU resident mem usage: " << tot_res_mem << "\n"
+         << "CPU virtual mem usage: " << tot_virt_mem << G4endl;
 
+  //tot_res_mem_before = 0;
+  //tot_virt_mem_before = 0;
+  #endif
+  #ifdef USE_CUDA
+  size_t usage_mem_gpu_after = 0;
+  cudaGetDeviceCount( &num_gpus );
+  for ( int gpu_id = 0; gpu_id < num_gpus; gpu_id++ ) {
+        cudaSetDevice( gpu_id );
+        int id;
+        cudaGetDevice( &id );
+        cudaMemGetInfo( &free, &total );
+        usage_mem_gpu_after += total - free;
+        //std::cout << "GPU " << id << " memory: free=" << free << ", total=" << total << std::endl;
+  }
+  G4cout << "GPU mem after Run: " << usage_mem_gpu_after * toMB << G4endl;
+  size_t usage_mem_gpu = usage_mem_gpu_after - usage_mem_gpu_before;
+  G4cout << "GPU mem usage: " << usage_mem_gpu * toMB << G4endl;
+  //analysisManager->FillNtupleDColumn(8, usage_mem_gpu * toMB);
+  
+  //usage_mem_gpu_before = 0;
+  #endif
+  */
 }
 
 #endif

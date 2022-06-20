@@ -84,6 +84,14 @@ class Par04EventAction : public G4UserEventAction
   std::vector<G4int> fCalPhi;
   /// Cell ID of z axis to be stored in ntuple
   std::vector<G4int> fCalZ;
+
+  #ifdef USE_CUDA 
+  size_t usage_mem_gpu = 0;
+  #endif
+  #ifdef USE_ROOT
+	G4double tot_res_mem = 0;
+	G4double tot_virt_mem = 0;
+  #endif
 };
 
 #endif /* PAR04EVENTACTION_HH */

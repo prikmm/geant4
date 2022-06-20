@@ -105,6 +105,7 @@ int main(int argc, char** argv)
 
   // Instantiate G4UIExecutive if interactive mode
   G4UIExecutive* ui = nullptr;
+  //G4RunManagerType runManagerType = G4RunManagerType::Serial;
   G4RunManagerType runManagerType = G4RunManagerType::Serial;
   if(useInteractiveMode)
   {

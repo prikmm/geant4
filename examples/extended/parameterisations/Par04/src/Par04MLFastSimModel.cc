@@ -40,7 +40,8 @@
 
 Par04MLFastSimModel::Par04MLFastSimModel(G4String aModelName, G4Region* aEnvelope)
   : G4VFastSimulationModel(aModelName, aEnvelope)
-  , fInference(std::unique_ptr<Par04InferenceSetup>(new Par04InferenceSetup()))
+  //, fInference(std::unique_ptr<Par04InferenceSetup>(new Par04InferenceSetup()))
+  , fInference(new Par04InferenceSetup())
   , fHitMaker(new G4FastSimHitMaker)
 {}
 
@@ -48,13 +49,15 @@ Par04MLFastSimModel::Par04MLFastSimModel(G4String aModelName, G4Region* aEnvelop
 
 Par04MLFastSimModel::Par04MLFastSimModel(G4String aModelName)
   : G4VFastSimulationModel(aModelName)
-  , fInference(std::unique_ptr<Par04InferenceSetup>(new Par04InferenceSetup()))
+  //, fInference(std::unique_ptr<Par04InferenceSetup>(new Par04InferenceSetup()))
+  , fInference(new Par04InferenceSetup())
   , fHitMaker(new G4FastSimHitMaker)
 {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04MLFastSimModel::~Par04MLFastSimModel() {
+  delete fInference;
   G4cout << "ML Fast Sim Model destroyed!" << G4endl;
 }
 

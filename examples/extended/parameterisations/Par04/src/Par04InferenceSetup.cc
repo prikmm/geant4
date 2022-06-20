@@ -40,12 +40,15 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04InferenceSetup::Par04InferenceSetup()
-  : fInferenceMessenger(std::unique_ptr<Par04InferenceMessenger>(new Par04InferenceMessenger(this)))
+  //: fInferenceMessenger(std::unique_ptr<Par04InferenceMessenger>(new Par04InferenceMessenger(this)))
+  : fInferenceMessenger(new Par04InferenceMessenger(this))
 {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Par04InferenceSetup::~Par04InferenceSetup() {
+  delete fInferenceMessenger;
+  delete fInferenceInterface;
   G4cout << "Inference Setup destroyed!" << G4endl;
 }
 
@@ -119,6 +122,7 @@ void Par04InferenceSetup::SetInferenceLibrary(G4String aName)
         fCudaCudnnConvUseMaxWorkspace.c_str(),
     };
     
+    /*
     fInferenceInterface = std::unique_ptr<Par04InferenceInterface>(
       new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads,
                              fDnnlFlag, fOpenVinoFlag, fCudaFlag, fTensorrtFlag,
@@ -126,6 +130,13 @@ void Par04InferenceSetup::SetInferenceLibrary(G4String aName)
                              openvino_options,
                              cuda_keys, cuda_values,
                              trt_keys, trt_values));
+    */
+    fInferenceInterface = new Par04OnnxInference(fModelPathName, fProfileFlag, fOptimizationFlag, fIntraOpNumThreads,
+                                                 fDnnlFlag, fOpenVinoFlag, fCudaFlag, fTensorrtFlag,
+                                                 fDnnlEnableCpuMemArena,
+                                                 openvino_options,
+                                                 cuda_keys, cuda_values,
+                                                 trt_keys, trt_values);
   
   }
 #endif

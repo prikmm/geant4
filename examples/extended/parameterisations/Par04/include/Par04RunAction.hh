@@ -39,6 +39,7 @@
 #include "G4ParticleTable.hh"                // for G4ParticleTable
 #include "G4SystemOfUnits.hh"                // for GeV
 #include "Par04EventInformation.hh"          // for Par04EventInformation
+#include <vector>
 class G4ParticleDefinition;
 class Par04EventAction;
 class G4Run;
@@ -72,6 +73,10 @@ class Par04RunAction : public G4UserRunAction
   Par04DetectorConstruction* fDetector;
   /// Pointer to event action to save hits
   Par04EventAction* fEventAction;
+
+  std::unique_ptr<std::vector<double>> cpuMemUsage;
+  std::unique_ptr<std::vector<double>> gpuMemUsage;
+
 };
 
 #endif /* PAR04RUNACTION_HH */

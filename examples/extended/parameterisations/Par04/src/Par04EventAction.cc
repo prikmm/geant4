@@ -23,6 +23,7 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
+
 #include "Par04EventAction.hh"
 #include <CLHEP/Units/SystemOfUnits.h>   // for GeV
 #include <CLHEP/Vector/ThreeVector.h>    // for Hep3Vector
@@ -46,6 +47,13 @@
 #include "G4SDManager.hh"                // for G4SDManager
 #include "Par04DetectorConstruction.hh"  // for Par04DetectorConstruction
 #include "Par04Hit.hh"                   // for Par04Hit, Par04HitsCollection
+#ifdef USE_ROOT
+#include "TSystem.h"
+#endif
+#ifdef USE_CUDA
+//#include "cuda.h"
+#include "cuda_runtime_api.h"
+#endif
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -70,7 +78,35 @@ Par04EventAction::~Par04EventAction() {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Par04EventAction::BeginOfEventAction(const G4Event*) { fTimer.Start(); }
+void Par04EventAction::BeginOfEventAction(const G4Event*) 
+{ 
+  fTimer.Start();
+
+  #ifdef USE_CUDA
+  const G4float GPUtoMB = 1.f / (1024.f * 1024.f);
+  size_t free, total;
+  G4int num_gpus;
+  cudaGetDeviceCount( &num_gpus );
+  for ( int gpu_id = 0; gpu_id < num_gpus; gpu_id++ ) {
+        cudaSetDevice( gpu_id );
+        //int id;
+        //cudaGetDevice( &id );
+        cudaMemGetInfo( &free, &total );
+        usage_mem_gpu += total - free;
+        //std::cout << "GPU " << id << " memory: free=" << free << ", total=" << total << std::endl;
+  }
+  G4cout << "GPU mem before: " << usage_mem_gpu * GPUtoMB << G4endl;
+  #endif
+  #ifdef USE_ROOT
+  const G4float CPUtoMB = 1.f / 1024.f;
+  static ProcInfo_t info;
+  gSystem->GetProcInfo(&info);
+  tot_res_mem += info.fMemResident * CPUtoMB;
+	tot_virt_mem += info.fMemVirtual * CPUtoMB;
+  G4cout << "CPU resident mem before: " << tot_res_mem << "\n"
+         << "CPU virtual mem before: " << tot_virt_mem << G4endl;
+  #endif
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -199,5 +235,40 @@ void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
   rSecondMoment /= totalEnergy;
   analysisManager->FillH1(8, tSecondMoment);
   analysisManager->FillH1(9, rSecondMoment);
+
+
+  // Memory Usage extraction
+  #ifdef USE_ROOT
+  const G4float CPUtoMB = 1.f / 1024.f;
+  static ProcInfo_t info;
+  gSystem->GetProcInfo(&info);
+  G4double tot_res_mem_after = info.fMemResident * CPUtoMB;
+	G4double tot_virt_mem_after = info.fMemVirtual * CPUtoMB;
+  tot_res_mem += tot_res_mem_after - tot_res_mem;
+	tot_virt_mem += tot_virt_mem_after - tot_virt_mem;
+  analysisManager->FillNtupleDColumn(6, tot_res_mem);
+  analysisManager->FillNtupleDColumn(7, tot_virt_mem);
+  G4cout << "CPU resident mem usage: " << tot_res_mem << "\n"
+         << "CPU virtual mem usage: " << tot_virt_mem << G4endl;
+  #endif
+  #ifdef USE_CUDA
+  const G4float GPUtoMB = 1.f / (1024.f * 1024.f);
+  size_t free, total;
+  size_t usage_mem_gpu_after = 0;
+  G4int num_gpus;
+  cudaGetDeviceCount( &num_gpus );
+  for ( int gpu_id = 0; gpu_id < num_gpus; gpu_id++ ) {
+        cudaSetDevice( gpu_id );
+        int id;
+        cudaGetDevice( &id );
+        cudaMemGetInfo( &free, &total );
+        usage_mem_gpu_after += total - free;
+        //std::cout << "GPU " << id << " memory: free=" << free << ", total=" << total << std::endl;
+  }
+  usage_mem_gpu += usage_mem_gpu_after - usage_mem_gpu;
+  G4cout << "GPU mem usage: " << usage_mem_gpu * GPUtoMB << G4endl;
+  analysisManager->FillNtupleDColumn(8, usage_mem_gpu * GPUtoMB);
+  #endif
+  //
   analysisManager->AddNtupleRow();
 }
