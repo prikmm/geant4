@@ -86,18 +86,43 @@ RUN cd /opt/geant4/build && \
 RUN source /opt/geant4/install/bin/geant4.sh
 
 ##############################################################################################################################
+###-------------------------------------------------INSTALLING ROOT-CERN---------------------------------------------------###
+##############################################################################################################################
+
+FROM g4_builder as root_builder
+
+ARG root_v=6.26.00
+ARG os_v=Linux-ubuntu20
+ARG architecure_v=x86_64
+ARG gcc_v=gcc9.3
+
+RUN mkdir -p /opt/root/src && \
+	cd /opt/root/src && \
+	wget https://root.cern/download/root_v${root_v}.${os_v}-${architecure_v}-${gcc_v}.tar.gz && \
+	tar -xzvf root_v${root_v}.${os_v}-${architecure_v}-${gcc_v}.tar.gz && \
+	source root/bin/thisroot.sh && \
+	rm -rf root_v${root_v}.${os_v}-${architecure_v}-${gcc_v}.tar.gz
+
+RUN cd /opt/root/src && \
+	ls .
+
+##############################################################################################################################
 ###-----------------------------------------------------BUILDING PAR04-----------------------------------------------------###
 ##############################################################################################################################
 
-FROM g4_builder as par04_builder
+FROM root_builder as par04_builder
 
 RUN mkdir -p /opt/par04/src
 COPY . /opt/par04/src/
 
 RUN cd /opt/par04/src && \
-    rm -rf CMakeCache.txt CMakeFiles examplePar04 && \
-    cmake -DCMAKE_PREFIX_PATH="/opt/geant4/install;/opt/onnxruntime/install;/opt/onnxruntime/data" \
-    	  . && \
+    rm -rf CMakeCache.txt CMakeFiles examplePar04 Makefile && \
+    cmake -DCMAKE_BUILD_TYPE="Debug" \
+          -DCMAKE_PREFIX_PATH="/opt/root/src/root;/opt/geant4/install;/opt/onnxruntime/install;/opt/onnxruntime/data;/usr/local/cuda;" \
+          -DCMAKE_CXX_FLAGS_DEBUG="-ggdb3" \
+    	  .
+
+RUN cd /opt/par04/src && \
     make -j`nproc` && \
     make install
 
@@ -114,24 +139,27 @@ RUN apt-get update -y && \
     apt-get -y install build-essential gcc g++ wget curl git python3-dev python3-numpy python3-setuptools python3-wheel python3-pip
     #apt-get -y install build-essential libtool autoconf unzip wget curl gcc g++ libexpat1-dev software-properties-common git python3-dev python3-numpy python3-setuptools python3-wheel python3-pip aria2
         
-RUN mkdir -p /opt/onnxruntime && \
+RUN mkdir -p /opt/onnxruntime/install && \
+    mkdir -p /opt/root/src/root && \
 	mkdir -p /opt/geant4/install && \
 	mkdir -p /opt/geant4/data && \
 	mkdir -p /opt/Par04 && \
 	mkdir -p /opt/trt/geant4/cache
 
-COPY --from=ort_builder /opt/onnxruntime/install /opt/onnxruntime
+COPY --from=ort_builder /opt/onnxruntime/install /opt/onnxruntime/install
+COPY --from=root_builder /opt/root/src/root /opt/root/src/root
 COPY --from=g4_builder /opt/geant4/install /opt/geant4/install
 COPY --from=g4_builder /opt/geant4/data /opt/geant4/data
 COPY --from=par04_builder /opt/par04/src /opt/par04
 
 RUN echo ". /opt/geant4/install/bin/geant4.sh" >> ~/.bashrc
+RUN echo ". /opt/root/src/root/bin/thisroot.sh" >> ~/.bashrc
 
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/onnxruntime/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/onnxruntime/install/lib;
 
 RUN rm -rf /var/lib/apt/lists/*
 
-RUN cd /opt/onnxruntime/pywheels && \
+RUN cd /opt/onnxruntime/install/pywheels && \
 	python3 -m pip install ./*.whl 
 
 WORKDIR /opt/par04

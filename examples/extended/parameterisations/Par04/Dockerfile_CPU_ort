@@ -121,19 +121,47 @@ RUN cd /opt/geant4/build && \
 RUN source /opt/geant4/install/bin/geant4.sh
 
 ##############################################################################################################################
+###-------------------------------------------------INSTALLING ROOT-CERN---------------------------------------------------###
+##############################################################################################################################
+
+FROM g4_builder as root_builder
+
+ARG root_v=6.26.04
+ARG os_v=Linux-ubuntu18
+ARG architecure_v=x86_64
+ARG gcc_v=gcc7.5
+
+RUN mkdir -p /opt/root/src && \
+	cd /opt/root/src && \
+	wget https://root.cern/download/root_v${root_v}.${os_v}-${architecure_v}-${gcc_v}.tar.gz && \
+	tar -xzvf root_v${root_v}.${os_v}-${architecure_v}-${gcc_v}.tar.gz && \
+	source root/bin/thisroot.sh && \
+	rm -rf root_v${root_v}.${os_v}-${architecure_v}-${gcc_v}.tar.gz
+
+RUN cd /opt/root/src && \
+	ls .
+
+##############################################################################################################################
 ###-----------------------------------------------------BUILDING PAR04-----------------------------------------------------###
 ##############################################################################################################################
 
-FROM g4_builder as par04_builder
+FROM root_builder as par04_builder
 
 RUN mkdir -p /opt/par04/src
 COPY . /opt/par04/src/
 
 RUN cd /opt/par04/src && \
-    rm -rf CMakeCache.txt CMakeFiles examplePar04 && \
-    cmake -DCMAKE_PREFIX_PATH="/opt/geant4/install;/opt/onnxruntime/install;/opt/onnxruntime/data" \
-    	  . && \
-    make -j`nproc` && \
+    rm -rf CMakeCache.txt CMakeFiles examplePar04 Makefile && \
+	cmake -DCMAKE_BUILD_TYPE="Debug" \
+		  -DCMAKE_PREFIX_PATH="/opt/root/src/root;/opt/geant4/install;/opt/onnxruntime/install;/opt/onnxruntime/data;/opt/onednn/install/lib;/opt/intel/openvino_2022/runtime/lib;/opt/intel/openvino_2022/runtime/include" \
+		  -DCMAKE_CXX_FLAGS_DEBUG="-ggdb3" \
+		  .	
+		  
+#RUN cd /opt/par04/src && \
+#	ls .
+
+RUN cd /opt/par04/src && \
+	make -j`nproc` && \
     make install
     
 #############################################################################################################################
@@ -145,31 +173,33 @@ FROM openvino/ubuntu18_runtime:${OPENVINO_VERSION}
 ENV DEBIAN_FRONTEND noninteractive
 USER root
 
-RUN mkdir -p /opt/onnxruntime && \
+RUN apt-get update && \
+	apt-get install -y vim
+
+RUN mkdir -p /opt/onnxruntime/install && \
 	mkdir -p /opt/geant4/install && \
 	mkdir -p /opt/geant4/data && \
 	mkdir -p /opt/Par04
 
-COPY --from=ort_builder /opt/onednn/install /opt/onednn
-COPY --from=ort_builder /opt/onnxruntime/install /opt/onnxruntime
+COPY --from=ort_builder /opt/onednn/install /opt/onednn/install 
+COPY --from=root_builder /opt/root/src/root /opt/root/src/root
+COPY --from=ort_builder /opt/onnxruntime/install /opt/onnxruntime/install
 COPY --from=g4_builder /opt/geant4/install /opt/geant4/install
 COPY --from=g4_builder /opt/geant4/data /opt/geant4/data
 COPY --from=par04_builder /opt/par04/src /opt/par04
 COPY --from=ort_builder /sources /sources
 
-
-RUN echo ". /opt/geant4/install/bin/geant4.sh" >> ~/.bashrc
-
 ENV PATH=${WORKDIR_PATH}/miniconda/bin:${WORKDIR_PATH}/cmake-dir/bin:$PATH
 ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/onnxruntime/lib:/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:/opt/onednn/include:/opt/onednn/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/onnxruntime/install/lib:/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:/opt/onednn/install/include:/opt/onednn/install/lib
+
+RUN echo ". /opt/geant4/install/bin/geant4.sh" >> ~/.bashrc
+RUN echo ". /opt/root/src/root/bin/thisroot.sh" >> ~/.bashrc
 
 #RUN cd /opt/onnxruntime && \
 #	ls /opt/onnxruntime && \
 #	python3 -m pip install ./*.whl
 
-#RUN apt-get update && \
-#		apt-get install -y vim
 
 WORKDIR /opt/par04
 							   #####

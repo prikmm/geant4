@@ -95,7 +95,7 @@ void Par04EventAction::BeginOfEventAction(const G4Event*)
         usage_mem_gpu += total - free;
         //std::cout << "GPU " << id << " memory: free=" << free << ", total=" << total << std::endl;
   }
-  G4cout << "GPU mem before: " << usage_mem_gpu * GPUtoMB << G4endl;
+  //G4cout << "GPU mem before: " << usage_mem_gpu * GPUtoMB << G4endl;
   #endif
   #ifdef USE_ROOT
   const G4float CPUtoMB = 1.f / 1024.f;
@@ -103,8 +103,8 @@ void Par04EventAction::BeginOfEventAction(const G4Event*)
   gSystem->GetProcInfo(&info);
   tot_res_mem += info.fMemResident * CPUtoMB;
 	tot_virt_mem += info.fMemVirtual * CPUtoMB;
-  G4cout << "CPU resident mem before: " << tot_res_mem << "\n"
-         << "CPU virtual mem before: " << tot_virt_mem << G4endl;
+  //G4cout << "CPU resident mem before: " << tot_res_mem << "\n"
+  //       << "CPU virtual mem before: " << tot_virt_mem << G4endl;
   #endif
 }
 
@@ -248,8 +248,8 @@ void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
 	tot_virt_mem += tot_virt_mem_after - tot_virt_mem;
   analysisManager->FillNtupleDColumn(6, tot_res_mem);
   analysisManager->FillNtupleDColumn(7, tot_virt_mem);
-  G4cout << "CPU resident mem usage: " << tot_res_mem << "\n"
-         << "CPU virtual mem usage: " << tot_virt_mem << G4endl;
+  //G4cout << "CPU resident mem usage: " << tot_res_mem << "\n"
+  //       << "CPU virtual mem usage: " << tot_virt_mem << G4endl;
   #endif
   #ifdef USE_CUDA
   const G4float GPUtoMB = 1.f / (1024.f * 1024.f);
@@ -266,7 +266,7 @@ void Par04EventAction::EndOfEventAction(const G4Event* aEvent)
         //std::cout << "GPU " << id << " memory: free=" << free << ", total=" << total << std::endl;
   }
   usage_mem_gpu += usage_mem_gpu_after - usage_mem_gpu;
-  G4cout << "GPU mem usage: " << usage_mem_gpu * GPUtoMB << G4endl;
+  //G4cout << "GPU mem usage: " << usage_mem_gpu * GPUtoMB << G4endl;
   analysisManager->FillNtupleDColumn(8, usage_mem_gpu * GPUtoMB);
   #endif
   //
